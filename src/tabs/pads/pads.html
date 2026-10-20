@@ -1,0 +1,78 @@
+  <div class="tab" id="tab-pads">
+    <section>
+    <details id="help">
+      <summary>First-time setup</summary>
+      <ol>
+        <li>Connect OBS and your Duo on the <b>Connections</b> tab (it walks you through it).</li>
+        <li>On the RØDECaster Duo, set each pad you want to use to the <b>MIDI</b> pad type. (Pads set to sounds or effects send nothing to this page.)</li>
+        <li>Open this file in <b>Chrome or Edge</b> and click <b>Allow</b> when it asks to use MIDI devices.</li>
+        <li>Click <b>Quick setup</b> and press your pads in order (or click any pad in the grid and press the matching pad on your Duo). Then click a pad and use <b>+ Add action</b> to choose what it does.</li>
+        <li>Keep this browser tab open while you stream (it can sit in the background). Use <b>Backup</b> now and then to save your pad setup to a file.</li>
+      </ol>
+    </details>
+  </section>
+
+    <div class="cols">
+      <div class="col">
+        <section class="hero">
+      <div class="padhead">
+        <h2 style="margin:0">Your pads</h2>
+        <span class="gridsize">Grid
+          <input id="gridCols" type="number" min="1" max="8" aria-label="Pads across"> across ×
+          <input id="gridRows" type="number" min="1" max="8" aria-label="Pads down"> down</span>
+        <button class="primary" id="quickBtn" title="Press each pad in order to link them all">Quick setup</button>
+      </div>
+      <div class="quickbar hide" id="quickBar">
+        <span id="quickText" style="flex:1"></span>
+        <button class="ghost" id="quickSkip">Skip</button>
+        <button class="danger" id="quickStop">Stop</button>
+      </div>
+      <div class="padgrid" id="padGrid"></div>
+      <p class="note" id="gridNote" style="text-align:center"></p>
+
+      <div class="found">
+        <div class="foundhead">
+          <h2 style="margin:0">Buttons found</h2>
+          <span class="note" style="margin:0">Every button you press on the Duo is remembered here. Drag one onto a pad, or select a pad and click one.</span>
+        </div>
+        <div class="kchips" id="knownList"></div>
+      </div>
+    </section>
+      </div>
+      <div class="col">
+        <section id="padDetail">
+      <h2 id="padTitle">Pad</h2>
+      <div class="row">
+        <label style="flex:2;min-width:180px">Name<input id="padName" autocomplete="off"></label>
+        <div><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Colour</div><div class="swatches" id="padColors"></div></div>
+      </div>
+      <div class="linkrow">
+        <span class="trig" id="padTrig"></span>
+        <button id="padLearn">Change button</button>
+        <button class="ghost" id="padUnlink">Unlink</button>
+        <span class="spacer"></span>
+        <button id="padTest">Test pad</button>
+        <button class="danger" id="padClear">Clear pad</button>
+      </div>
+      <p class="note" id="padMsg"></p>
+      <h2 style="margin:18px 0 10px">What this pad does</h2>
+      <div class="maps" id="maps"></div>
+      <div class="picker hide" id="actPicker"></div>
+      <div class="row" style="margin-top:12px;justify-content:space-between;align-items:center">
+        <button class="primary" id="addBtn">+ Add action</button>
+        <div class="row" style="gap:8px">
+          <button class="ghost" id="backupBtn" title="Save your pad setup to a file">Backup</button>
+          <button class="ghost" id="restoreBtn" title="Load a pad setup from a backup file">Restore</button>
+          <input type="file" id="restoreFile" accept=".json,application/json" class="hide">
+          <button class="ghost" id="refreshBtn" title="Reload scenes and sources from OBS">Refresh OBS list</button>
+        </div>
+      </div>
+    </section>
+        <section>
+      <h2>Activity</h2>
+      <div class="log" id="log"><div>Nothing yet.</div></div>
+    </section>
+      </div>
+    </div>
+  </div>
+

@@ -1,0 +1,9 @@
+{
+  "name": "tos-hub",
+  "productName": "TOS HUB",
+  "version": "1.0.0",
+  "description": "TOS HUB: RØDECaster pads, Twitch shoutouts, chat overlay and webcam tools for OBS",
+  "main": "main.js",
+  "author": "Rory",
+  "license": "UNLICENSED"
+}

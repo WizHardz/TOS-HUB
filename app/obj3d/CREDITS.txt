@@ -1,0 +1,17 @@
+3D models from the Khronos glTF Sample Assets (github.com/KhronosGroup/glTF-Sample-Assets), shrunk for TOS HUB.
+three.js r147 (MIT licence).
+
+avocado3d: Avocado - CC0
+fish3d: BarramundiFish - CC0
+boombox3d: BoomBox - CC0
+truck3d: CesiumMilkTruck - CC BY 4.0, (c) 2017 Cesium
+watch3d: ChronographWatch - CC BY 4.0, based on "Chronograph Watch Mudmaster" by graphiccompressor
+fridge3d: CommercialRefrigerator - CC BY 4.0, based on "Commercial Fridge" by Sean Thomas
+helmet3d: DamagedHelmet - CC BY 4.0, (c) 2016 theblueturtle_ / 2018 ctxwing
+plant3d: DiffuseTransmissionPlant - CC BY 4.0, (c) 2024 Darmstadt Graphics Group
+teacup3d: DiffuseTransmissionTeacup - CC0
+sofa3d: GlamVelvetSofa - CC BY 4.0, (c) 2021 Wayfair LLC
+shoe3d: MaterialsVariantsShoe - CC BY 4.0, (c) 2021 Shopify
+skull3d: ScatteringSkull - CC0
+chair3d: SheenChair - CC0, Wayfair LLC
+bottle3d: WaterBottle - CC0

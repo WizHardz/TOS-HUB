@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TOS HUB Chat</title>
+<style>
+  /* TOS HUB's private chat window: floats over your game, only you see it. */
+  :root{--fs:17px;--bg:.55;--c1:#2ff3ff;--c2:#b14dff;--w:100%}
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:Rubik, "Segoe UI", system-ui, sans-serif;color:#fff;user-select:none}
+  #wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;box-sizing:border-box;gap:4px}
+  .m{background:rgba(10,4,22,var(--bg));border-radius:10px;padding:5px 10px 6px;font-size:var(--fs);line-height:1.3;word-wrap:break-word;overflow-wrap:anywhere;
+    text-shadow:0 1px 2px #000, 0 0 3px #000;animation:in .18s ease-out;transition:opacity .8s, transform .8s;border-left:3px solid transparent}
+  .m.gone{opacity:0;transform:translateX(12px)}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}}
+  .m .n{font-weight:800}
+  .m .b{display:inline-block;font:800 calc(var(--fs) * .55)/1 system-ui, sans-serif;padding:3px 4px 2px;border-radius:4px;margin-right:4px;vertical-align:2px;color:#000;text-shadow:none}
+  .b.broadcaster{background:#ff4d5e}.b.moderator{background:#3dff8a}.b.vip{background:#ff4fd8}.b.subscriber,.b.founder{background:#b14dff;color:#fff}.b.first{background:#ffe14d}
+  .m img{height:1.6em;vertical-align:-.45em;margin:0 1px}
+  .m.mention{border-left-color:#ffe14d;background:rgba(70,55,0,calc(var(--bg) + .15))}
+  .m.first{border-left-color:#ffe14d}
+  .m.action .t{font-style:italic}
+  .m.event{border-left-color:var(--c2);background:rgba(50,10,80,calc(var(--bg) + .15));font-weight:600}
+  .m.event .ic{margin-right:4px}
+  .m.bits{border-left-color:#ffe14d}
+  .m.deleted .t{opacity:.45;text-decoration:line-through}
+  body.nobadges .b:not(.first){display:none}
+  /* move & resize mode */
+  #move{display:none;position:absolute;inset:0;border:2px dashed var(--c1);border-radius:12px;background:rgba(47,243,255,.08);-webkit-app-region:drag;z-index:5}
+  body.unlocked #move{display:block}
+  #move .tip{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(10,4,22,.92);border:1px solid var(--c1);border-radius:10px;padding:8px 12px;
+    font:600 13px/1.35 system-ui, sans-serif;text-align:center;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+  #move button{-webkit-app-region:no-drag;margin-top:6px;font:700 13px system-ui;background:var(--c1);color:#000;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
+  #grip{position:absolute;right:0;bottom:0;width:26px;height:26px;-webkit-app-region:no-drag;cursor:nwse-resize;
+    background:linear-gradient(135deg,transparent 50%,var(--c1) 50%);border-bottom-right-radius:12px}
+  #empty{display:none;position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font:600 13px system-ui;color:rgba(255,255,255,.75);text-shadow:0 1px 2px #000}
+  body.unlocked #empty{display:block}
+</style>
+</head>
+<body>
+<div id="wrap"></div>
+<div id="move"><div class="tip">Drag to move · drag the corner to resize<br><button id="lockBtn">Done</button></div><div id="grip"></div></div>
+<div id="empty">Chat will appear here</div>
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const wrap = $("wrap");
+  const cfg = { size: 17, bg: 55, fade: 0, max: 30, emotes: true, badges: true, colours: true, alerts: true, hideCmds: false };
+  const items = [];
+  function apply() {
+    document.documentElement.style.setProperty("--fs", (cfg.size || 17) + "px");
+    document.documentElement.style.setProperty("--bg", Math.max(0, Math.min(1, (cfg.bg == null ? 55 : cfg.bg) / 100)));
+    document.body.classList.toggle("nobadges", !cfg.badges);
+    trim();
+  }
+  // names in dark colours are hard to read on a dark box, so they're lifted a bit
+  function readable(hex) {
+    if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return "#b9a6ff";
+    let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    const lum = (r * 299 + g * 587 + b * 114) / 1000;
+    if (lum < 110) { const k = (110 - lum) / 255 + .25; r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; }
+    return `rgb(${r | 0},${g | 0},${b | 0})`;
+  }
+  // splits the message into text and emote pictures (Twitch counts positions in characters)
+  function body(text, emotes) {
+    const frag = document.createDocumentFragment();
+    const chars = Array.from(text || "");
+    const spots = [];
+    if (cfg.emotes && emotes) emotes.split("/").forEach(part => {
+      const [id, ranges] = part.split(":"); if (!id || !ranges) return;
+      ranges.split(",").forEach(r => { const [a, b] = r.split("-").map(Number); if (b >= a) spots.push([a, b, id]); });
+    });
+    spots.sort((x, y) => x[0] - y[0]);
+    let i = 0;
+    spots.forEach(([a, b, id]) => {
+      if (a < i) return;
+      if (a > i) frag.append(chars.slice(i, a).join(""));
+      const img = document.createElement("img");
+      img.src = `https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(id)}/default/dark/2.0`;
+      img.alt = chars.slice(a, b + 1).join(""); img.onerror = () => img.replaceWith(img.alt);
+      frag.append(img); i = b + 1;
+    });
+    if (i < chars.length) frag.append(chars.slice(i).join(""));
+    return frag;
+  }
+  function add(m) {
+    if (m.kind === "chat" && cfg.hideCmds && /^!/.test(m.text || "")) return;
+    if (m.kind === "event" && !cfg.alerts) return;
+    const d = document.createElement("div");
+    d.className = "m" + (m.kind === "event" ? " event" : "") + (m.mention ? " mention" : "") + (m.first ? " first" : "") + (m.action ? " action" : "") + (m.bits ? " bits" : "");
+    if (m.kind === "event") {
+      d.append(Object.assign(document.createElement("span"), { className: "ic", textContent: m.icon || "✨" }), m.text || "");
+      if (m.say) { d.append(document.createElement("br")); const t = document.createElement("span"); t.className = "t"; t.append(body(m.say, m.emotes)); d.append(t); }
+    } else {
+      if (m.first) d.append(Object.assign(document.createElement("span"), { className: "b first", textContent: "FIRST" }));
+      (m.badges || []).forEach(b => { const lab = { broadcaster: "LIVE", moderator: "MOD", vip: "VIP", subscriber: "SUB", founder: "SUB" }[b]; if (lab) d.append(Object.assign(document.createElement("span"), { className: "b " + b, textContent: lab })); });
+      const n = document.createElement("span"); n.className = "n"; n.textContent = m.name || "?";
+      n.style.color = cfg.colours ? readable(m.color) : "#cbb8ff";
+      d.append(n, m.action ? " " : ": ");
+      const t = document.createElement("span"); t.className = "t"; t.append(body(m.text, m.emotes));
+      if (m.bits) t.prepend(`💎${m.bits} `);
+      d.append(t);
+    }
+    d.dataset.id = m.id || ""; d.dataset.user = (m.login || "").toLowerCase();
+    wrap.append(d);
+    const it = { el: d, at: Date.now() };
+    items.push(it);
+    trim();
+  }
+  function trim() {
+    while (items.length > Math.max(3, cfg.max || 30)) items.shift().el.remove();
+    // drop anything that has scrolled out of the top of the window
+    while (items.length > 1 && items[0].el.offsetTop < 0) items.shift().el.remove();
+  }
+  function clear(m) {
+    if (m.all) { items.splice(0).forEach(i => i.el.remove()); return; }
+    items.forEach(i => { if ((m.id && i.el.dataset.id === m.id) || (m.user && i.el.dataset.user === m.user.toLowerCase())) i.el.classList.add("deleted"); });
+  }
+  setInterval(() => {
+    if (!cfg.fade) return;
+    const now = Date.now();
+    items.forEach(i => { if (!i.gone && now - i.at > cfg.fade * 1000) { i.gone = true; i.el.classList.add("gone"); setTimeout(() => { i.el.remove(); const k = items.indexOf(i); if (k >= 0) items.splice(k, 1); }, 900); } });
+  }, 500);
+  function handle(m) {
+    if (!m || typeof m !== "object") return;
+    if (m.type === "cfg") { Object.assign(cfg, m.cfg || {}); apply(); }
+    else if (m.type === "msg") add(m.m);
+    else if (m.type === "clear") clear(m);
+    else if (m.type === "mode") document.body.classList.toggle("unlocked", !!m.unlocked);
+  }
+  window.screenChat = handle;
+  window.addEventListener("message", e => { if (e.source === window.parent) handle(e.data); });
+  if (window.tosChat) {
+    window.tosChat.onMsg(handle);
+    $("lockBtn").onclick = () => window.tosChat.lock();
+    // resizing (see-through windows can't be resized from their edges, so there's a corner grip)
+    const grip = $("grip");
+    let start = null;
+    grip.addEventListener("pointerdown", e => { grip.setPointerCapture(e.pointerId); start = { x: e.screenX, y: e.screenY }; });
+    grip.addEventListener("pointermove", e => { if (!start) return; window.tosChat.resize(e.screenX - start.x, e.screenY - start.y); start = { x: e.screenX, y: e.screenY }; });
+    grip.addEventListener("pointerup", () => { start = null; window.tosChat.resize(0, 0, true); });
+  } else $("lockBtn").onclick = () => handle({ type: "mode", unlocked: false });
+  apply();
+})();
+</script>
+</body>
+</html>

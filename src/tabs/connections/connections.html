@@ -1,0 +1,126 @@
+  <div class="tab hide" id="tab-conn">
+    <section class="hero connhero">
+      <div class="padhead" style="margin-bottom:12px">
+        <h2 style="margin:0">Connections</h2>
+        <button class="primary" id="connAll">Reconnect everything</button>
+      </div>
+      <div class="conntiles">
+        <button class="ctile" data-go="obsSec"><span class="cdot"></span><span class="ct1">OBS Studio</span><span class="ct2" id="ctObs"></span></button>
+        <button class="ctile" data-go="midiSec"><span class="cdot"></span><span class="ct1">RØDECaster Duo</span><span class="ct2" id="ctMidi"></span></button>
+        <button class="ctile" data-go="twChatSec"><span class="cdot"></span><span class="ct1">Twitch chat</span><span class="ct2" id="ctChat"></span></button>
+        <button class="ctile" data-go="twAuthSec"><span class="cdot"></span><span class="ct1">Twitch login</span><span class="ct2" id="ctAuth"></span></button>
+      </div>
+    </section>
+    <div class="cols">
+      <div class="col">
+            <section id="obsSec">
+          <h2>OBS connection</h2>
+          <details id="obsHelp" class="obshelp">
+            <summary>How to connect OBS (one-time setup)</summary>
+            <ol>
+              <li>Open <b>OBS Studio</b> (version 28 or newer has this built in).</li>
+              <li>In OBS's top menu, click <b>Tools → WebSocket Server Settings</b>.</li>
+              <li>Tick <b>Enable WebSocket server</b>. Leave the port as <b>4455</b> and keep <b>Enable Authentication</b> ticked.</li>
+              <li>Click <b>Show Connect Info</b>, then the <b>Copy</b> button next to <b>Server Password</b>.</li>
+              <li>Back here, paste it into <b>Password</b>, tick <b>Remember</b> and click <b>Connect</b>. You can click <b>OK</b> in OBS to close its window.</li>
+            </ol>
+            <p class="note">OBS on a different computer? Put the <b>Server IP</b> from Show Connect Info into <b>Host</b> instead of <code>localhost</code>.</p>
+          </details>
+          <div class="row">
+            <label>Host<input id="host" value="localhost"></label>
+            <label style="max-width:110px">Port<input id="port" value="4455" inputmode="numeric"></label>
+            <label>Password<input id="password" type="password" placeholder="from Show Connect Info"></label>
+            <label class="check"><input type="checkbox" id="remember"> Remember</label>
+            <button class="primary" id="connectBtn">Connect</button>
+          </div>
+          <p class="note" id="obsMsg"></p>
+        </section>
+            <section id="midiSec">
+          <h2>RØDECaster Duo (MIDI)</h2>
+          <p class="note" style="margin:0 0 10px">Connects automatically when the Duo is plugged in by USB. Pads must be set to the <b>MIDI</b> pad type on the Duo.</p>
+          <div class="row">
+            <label>Device<select id="midiDevice"><option value="all">All MIDI inputs</option></select></label>
+          </div>
+          <div class="monitor" id="monitor">Press a pad on the Duo to see its message here.</div>
+        </section>
+        <section id="voiceSec">
+          <h2>🗣️ Voice commands (VoiceAttack)</h2>
+          <p class="note" style="margin:0 0 10px" id="vaStatus">Checking…</p>
+          <div class="vaone">
+            <div class="row" style="align-items:flex-end"><label>Say this first (optional, stops you setting things off by accident)<input id="vaPrefix" placeholder="e.g. cast" autocomplete="off" spellcheck="false"></label>
+              <label>What goes in it<select id="vaWhat"><option value="mine">Just my voice commands (Triggers tab)</option><option value="all">Mine + every built-in phrase</option></select></label>
+              <button type="button" class="primary" id="vaMake">⬇ Make my VoiceAttack profile</button></div>
+            <p class="note" id="vaMakeMsg" style="margin:6px 0 0">One file with your voice commands from the <b>Triggers</b> tab (🗣️ Voice commands), or with every TOS HUB action if you pick that: effects, objects, drawing, the cam, OBS (scenes, mute, recording) and your pads. In VoiceAttack open the profile menu, choose <b>Import Profile</b>, pick <b>TOS HUB voice commands.vap</b> from your Downloads folder, then select that profile. Make it again after you add or rename pads.</p>
+            <details class="trkmap"><summary>What to say</summary><div class="vasay" id="vaSay"></div></details>
+          </div>
+          <h3 style="margin:14px 0 4px;font-size:14px">Or make one command by hand</h3>
+          <div class="row"><label style="flex:2">When I say this, TOS HUB does<select id="vaPick"></select></label><button type="button" class="ghost" id="vaTest">▶ Try it</button></div>
+          <div class="vabox">
+            <div class="varow"><span class="k">Application</span><code id="vaApp">C:\Windows\System32\wscript.exe</code><button type="button" class="ghost" data-copy="vaApp">Copy</button></div>
+            <div class="varow"><span class="k">With these parameters</span><code id="vaParams"></code><button type="button" class="ghost" data-copy="vaParams">Copy</button></div>
+          </div>
+          <details class="trkmap"><summary>How to set it up in VoiceAttack (2 minutes)</summary>
+            <ol class="vasteps">
+              <li>Open VoiceAttack, click the <b>pencil</b> (Edit profile), then <b>New Command</b>.</li>
+              <li>In <b>When I say</b>, type what you'll say (e.g. <i>fire</i>, <i>become an orange</i>, <i>clear drawing</i>).</li>
+              <li>Click <b>Other ▸ Windows ▸ Run an Application</b>.</li>
+              <li>Paste the <b>Application</b> and <b>With these parameters</b> lines from above (Copy buttons), and set the window to <b>Hidden</b> so nothing pops up.</li>
+              <li>Click OK, OK, Done. Say it: TOS HUB does it.</li>
+            </ol>
+            <p class="note" style="margin:4px 0 0">Only works with the TOS HUB desktop app open. It listens on this PC only, and the secret part of the address stops other programs or websites using it. <button type="button" class="ghost" id="vaAll">Copy every command as a list</button></p>
+          </details>
+        </section>
+        <section id="trigSec">
+          <h2>⌨️ Keybinds · 💜 Channel points · 💎 Bits · ⚡ Power-ups</h2>
+          <p class="note" style="margin:0 0 10px">Hotkeys, channel points, bits and Power-ups are in the <b>Triggers</b> tab, and each can do several things: effects, OBS scenes, mute, recording… To have your voice, a gesture or Twitch <b>press keys</b> for you, use the <b>Keybinds</b> tab.</p>
+          <button type="button" class="primary" id="goTrig">Open Triggers</button> <button type="button" class="ghost" id="goRules">Open Keybinds</button>
+        </section>
+      </div>
+      <div class="col">
+          <section id="twChatSec">
+          <h2>Twitch chat</h2>
+          <p class="note" style="margin:0 0 10px">Lets TOS HUB read your chat for shoutouts, chat commands and cam effects. No login needed for reading.</p>
+          <div class="row">
+            <label>Your channel<input id="twChannel" placeholder="your Twitch username" autocomplete="off"></label>
+            <button class="primary" id="twConnectBtn">Connect to chat</button>
+          </div>
+          <p class="note" id="twMode">Not connected.</p>
+        </section>
+          <section id="twAuthSec">
+          <h2>Twitch login <span class="opt">optional</span></h2>
+          <p class="note" style="margin:0 0 10px">Only needed so TOS HUB can post shoutouts in your chat for you.</p>
+          <details id="twAuth">
+            <summary id="twAuthSummary">Log in so it can send shoutouts for you</summary>
+            <div id="twLoggedOut">
+              <ol>
+                <li>Go to <b>dev.twitch.tv/console</b> and click <b>Register Your Application</b>.
+                  Name: anything (e.g. “My TOS HUB”). OAuth Redirect URL: <code>http://localhost</code>.
+                  Category: <b>Chat Bot</b>. Client type: <b>Confidential</b>. Then click <b>Manage</b> and copy the <b>Client ID</b>.</li>
+                <li>Paste the Client ID here, then log in:
+                  <div class="row" style="margin-top:8px">
+                    <label>Client ID<input id="twClientId" autocomplete="off"></label>
+                    <button class="primary" id="twLoginBtn">Log in with Twitch</button>
+                  </div>
+                </li>
+                <li id="twStep3">After you click <b>Authorize</b>, the new tab will say the site <b>can't be reached</b>. That's expected.
+                  Copy the whole address from that tab's address bar and paste it here:
+                  <div class="row" style="margin-top:8px">
+                    <label>Address from that tab<input id="twPaste" placeholder="http://localhost/#access_token=…" autocomplete="off"></label>
+                    <button class="primary" id="twFinishBtn">Finish login</button>
+                  </div>
+                </li>
+              </ol>
+            </div>
+            <p class="note hide" id="twAppNote">In the TOS HUB app, a Twitch window opens when you click <b>Log in with Twitch</b>. Log in, click <b>Authorize</b>, and it closes by itself.</p>
+            <div id="twLoggedIn" class="row hide" style="margin-top:12px;align-items:center">
+              <span id="twWho" style="flex:1"></span>
+              <button id="twLogoutBtn">Log out</button>
+            </div>
+            <p class="note" id="twAuthMsg"></p>
+            <p class="note">Your login is kept only in this browser on this computer and is only ever sent to Twitch.</p>
+          </details>
+        </section>
+      </div>
+    </div>
+  </div>
+

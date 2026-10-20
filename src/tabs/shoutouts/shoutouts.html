@@ -1,0 +1,51 @@
+  <div class="tab hide" id="tab-shout">
+    <div class="cols">
+      <div class="col">
+        <section>
+        <h2>Shoutout list</h2>
+          <p class="note" style="margin:0 0 10px"><span id="soChatState"></span> Your Twitch channel and login are on the <a href="#" class="golink" data-go="twChatSec">Connections</a> tab.</p>
+        <div class="row">
+          <label>Add people<input id="soAdd" placeholder="username, or several separated by commas" autocomplete="off"></label>
+          <button class="primary" id="soAddBtn">Add</button>
+        </div>
+        <div class="solist" id="soList"></div>
+      </section>
+        <section id="soPendingSec" class="hide">
+        <h2>To shout out</h2>
+        <p class="note" style="margin:0 0 10px">You're not logged in, so copy these into your chat.</p>
+        <div class="solist" id="soPending"></div>
+      </section>
+      </div>
+      <div class="col">
+        <section>
+        <h2>Settings</h2>
+        <label class="check wide"><input type="checkbox" id="soChat"> Post a shoutout message in chat</label>
+        <label style="margin:4px 0 4px">Default message
+          <textarea id="soTemplate" rows="2"></textarea>
+        </label>
+        <p class="note" style="margin-top:0">Use <code>{name}</code>, <code>{login}</code>, <code>{link}</code> and <code>{game}</code> (the game they last played).</p>
+        <label class="check wide"><input type="checkbox" id="soOfficial"> Also send Twitch's official shoutout</label>
+        <p class="note" style="margin-top:0">Only works while you're live. Twitch allows one every 2 minutes (extras wait in a queue) and the same person once an hour.</p>
+        <label class="check wide"><input type="checkbox" id="soRaid"> Shout out anyone who raids you, even if they're not on the list</label>
+        <div class="row" style="margin-top:6px">
+          <label style="max-width:180px">Wait before shouting (seconds)<input id="soDelay" type="number" min="0" step="1"></label>
+        </div>
+        <div class="row" style="margin-top:14px;align-items:center">
+          <span id="soSessionInfo" style="flex:1;color:var(--muted);font-size:14px"></span>
+          <button id="soReset">New stream: reset who's been shouted</button>
+        </div>
+        <p class="note" style="margin-top:6px">Each person gets one automatic shoutout per stream. It resets on its own if the tool hasn't been used for 6 hours.</p>
+      </section>
+        <section>
+        <h2>Activity</h2>
+        <div class="note" id="soQueue" style="margin:0 0 8px"></div>
+        <div class="log" id="soLog"><div>Nothing yet.</div></div>
+      </section>
+        <section>
+        <h2>Live chat</h2>
+        <div class="chatfeed" id="chatFeed"><div class="muted">Connect to chat to see messages here.</div></div>
+      </section>
+      </div>
+    </div>
+  </div>
+

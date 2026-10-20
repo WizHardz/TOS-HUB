@@ -1,0 +1,92 @@
+  <div class="tab hide" id="tab-overlay">
+    <div class="cols">
+      <div class="col">
+        <section class="hero">
+        <h2>Chat overlay preview</h2>
+        <iframe class="ovframe" id="ovFrame" title="Chat overlay preview"></iframe>
+        <div class="ovtools">
+          <button class="primary" id="ovSettings">Overlay settings</button>
+          <button id="ovTest">Test message</button>
+          <button class="ghost" id="ovReload">Reload preview</button>
+        </div>
+        <p class="note">Change the look with <b>Overlay settings</b> (or hover the preview and click ⚙), then press <b>Save</b> in that menu. Turn on <b>Demo mode</b> there to see fake chatters.</p>
+      </section>
+      </div>
+      <div class="col">
+        <section class="scsec">
+        <h2>Chat on my screen <span class="opt">only you see it</span></h2>
+        <p class="note" style="margin:0 0 10px">A see-through chat window that floats over your game so you can read chat while you play. Your mouse clicks go straight through it, and it's hidden from OBS so it never shows on stream.</p>
+        <div class="scstage"><iframe id="scFrame" title="On-screen chat preview"></iframe></div>
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="scShow">Show chat on my screen</button>
+          <button id="scMove" disabled>Move &amp; resize</button>
+          <button class="ghost" id="scTest">Test message</button>
+        </div>
+        <p class="note" id="scMsg"></p>
+        <div class="row" style="margin-top:8px">
+          <label>Text size <span class="val" id="scSizeV"></span><input type="range" id="scSize" min="12" max="32" step="1"></label>
+          <label>Background <span class="val" id="scBgV"></span><input type="range" id="scBg" min="0" max="95" step="5"></label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label>Messages kept <span class="val" id="scMaxV"></span><input type="range" id="scMax" min="5" max="60" step="1"></label>
+          <label>Old messages<select id="scFade"><option value="0">Stay until pushed off</option><option value="15">Fade after 15 seconds</option><option value="30">Fade after 30 seconds</option><option value="60">Fade after 1 minute</option><option value="120">Fade after 2 minutes</option></select></label>
+        </div>
+        <div class="row" style="margin-top:8px;gap:18px">
+          <label class="check wide"><input type="checkbox" id="scHide"> Hide it from OBS (keep it off stream)</label>
+          <label class="check wide"><input type="checkbox" id="scMentions"> Highlight messages that mention me</label>
+          <label class="check wide"><input type="checkbox" id="scAlerts"> Show raids, subs &amp; gifts</label>
+          <label class="check wide"><input type="checkbox" id="scCmds"> Hide !commands</label>
+          <label class="check wide"><input type="checkbox" id="scEmotes"> Emotes</label>
+          <label class="check wide"><input type="checkbox" id="scBadges"> Badges (MOD, VIP, SUB)</label>
+          <label class="check wide"><input type="checkbox" id="scColours"> Name colours</label>
+        </div>
+        <h2 style="margin:18px 0 8px">Alert sound (just for you)</h2>
+        <div class="row" style="gap:18px">
+          <label class="check wide"><input type="checkbox" id="scDing"> Play a sound when chat needs you</label>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <label>When<select id="scDingWhen"><option value="all">Every message</option><option value="first">Mentions &amp; first-time chatters</option><option value="alerts">Mentions, first-timers, raids, subs &amp; bits</option><option value="mention">Only when someone mentions me</option></select></label>
+          <label>Sound<select id="scDingSound"><option value="chime">Chime</option><option value="pop">Pop</option><option value="blip">Blip</option><option value="coin">Coin</option></select></label>
+          <label>Volume <span class="val" id="scDingVolV"></span><input type="range" id="scDingVol" min="5" max="100" step="5"></label>
+        </div>
+        <div class="row" style="margin-top:6px;align-items:flex-end">
+          <label style="flex:2">Play it through<select id="scDingOut"><option value="">Windows default sound output</option></select></label>
+          <button class="ghost" id="scDingTest" type="button">▶ Test</button>
+        </div>
+        <p class="note" style="margin-top:6px">So chat can't hear it, play it through a device OBS doesn't record, like your headphones or a separate output. In OBS, Settings → Audio shows which device <b>Desktop Audio</b> records: pick a different one here. On the RØDECaster, pick a spare virtual output (like “B”) and take its fader out of the USB 1 routing (Duo: Settings → Outputs → Routing). Then check it with “Can the stream hear my alert?” in Stream view.</p>
+        <p class="note" id="scDingRode" style="margin-top:4px"></p>
+        <p class="note" id="scDingMsg"></p>
+        <p class="note" style="margin-top:8px"><b>Ctrl+Shift+C</b> shows or hides it while you're in a game, and <b>Ctrl+Shift+L</b> lets you move it. It shows over games in <b>borderless</b> or <b>windowed</b> mode. In exclusive fullscreen Windows draws the game over everything, so switch the game to borderless.</p>
+      </section>
+        <section>
+        <h2>Send to OBS</h2>
+        <p class="note" id="ovWhere" style="margin:0 0 12px"></p>
+        <div class="row">
+          <label>Browser source in OBS<select id="ovSource"><option value="">Connect OBS on the Connections tab first</option></select></label>
+          <button class="primary" id="ovUpdate">Update this source</button>
+          <button id="ovCreate">Create a new one</button>
+        </div>
+        <p class="note">“Update” loads your saved overlay settings into that OBS source. “Create” adds a new <b>WizHardz Chat</b> source to the scene you're on. Do this again whenever you change the look.</p>
+        <p class="note" id="ovMsg"></p>
+        <details style="margin-top:14px">
+          <summary>Or add it to OBS by hand</summary>
+          <ol>
+            <li>In OBS, add a <b>Browser</b> source, and untick <b>Local file</b>.</li>
+            <li>Paste this into its <b>URL</b> box:
+              <div class="row" style="margin-top:8px;align-items:stretch">
+                <textarea id="ovLink" class="linkout" readonly></textarea>
+                <button id="ovCopy" style="flex:none">Copy</button>
+              </div>
+            </li>
+            <li>Set the width and height (e.g. 600 × 1000) and tick <b>Control audio via OBS</b> if you use the overlay's sounds.</li>
+          </ol>
+        </details>
+        <div class="row" style="margin-top:14px">
+          <button class="ghost" id="ovSave">Save overlay file</button>
+        </div>
+        <p class="note" style="margin-top:6px">Only needed if <code>chat-overlay.html</code> isn't already in your TOS HUB folder. It comes in the app ZIP.</p>
+      </section>
+      </div>
+    </div>
+  </div>
+

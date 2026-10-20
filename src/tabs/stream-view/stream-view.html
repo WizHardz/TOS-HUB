@@ -1,0 +1,62 @@
+  <div class="tab hide" id="tab-live">
+    <div class="cols lvcols">
+      <div class="col">
+        <section class="hero">
+          <div class="padhead">
+            <h2 style="margin:0">Your stream</h2>
+            <span class="lvbadge" id="lvLive">OFFLINE</span>
+            <span class="lvbadge" id="lvRec">NOT RECORDING</span>
+            <label class="inl">Smoothness<select id="lvFps"><option value="2">2 fps</option><option value="5">5 fps</option><option value="10">10 fps</option></select></label>
+          </div>
+          <div class="lvstage" id="lvStage"><img id="lvImg" alt="What your stream shows right now"><div class="lvempty" id="lvEmpty">Connect OBS on the Connections tab to see your stream here.</div><div class="lvscene" id="lvScene"></div></div>
+          <div class="lvscenes" id="lvScenes"></div>
+        </section>
+        <section id="lvAudioSec">
+          <div class="padhead"><h2 style="margin:0">Audio</h2><span class="lvbadge" id="lvMicR" title="TOS HUB mic reactions">MIC REACTIONS OFF</span></div>
+          <p class="note" style="margin:6px 0 8px">What OBS is sending to your stream, live. 🔇 mutes or unmutes in OBS. 🎙 marks your mic (TOS HUB warns you if it's muted or silent).</p>
+          <div class="lvaudio" id="lvAudio"><p class="note">Connect OBS on the Connections tab to see your audio here.</p></div>
+          <div class="lvwarns" id="lvWarns"></div>
+          <div class="row" style="margin-top:10px;align-items:center"><button class="ghost" id="lvHearTest" type="button" title="Plays your private chat alert 3 times and watches OBS to see if any of it reaches your stream">🔔 Can the stream hear my alert?</button><button class="ghost" id="lvMicTog" type="button">🎙 Mic reactions on</button></div>
+          <p class="note" id="lvHearMsg"></p>
+        </section>
+        <section id="lvVoiceSec">
+          <div class="padhead"><h2 style="margin:0">🗣️ Voice &amp; keys for OBS</h2></div>
+          <p class="note" style="margin:6px 0 8px">Run OBS hands-free: <b>＋ Key</b> gives an action a keybind, <b>＋ Voice</b> a VoiceAttack phrase. They go in the <b>Triggers</b> tab, where you can change or remove them and add more actions to the same key or phrase.</p>
+          <div class="lvobs" id="lvObsList"><p class="note">Connect OBS on the Connections tab to see your scenes and audio here.</p></div>
+          <div class="row" style="margin-top:10px;gap:8px"><button type="button" class="primary" id="lvVaMake">⬇ Save my VoiceAttack profile</button><button type="button" class="ghost" id="lvGoRules">Open the Triggers tab</button></div>
+          <p class="note" id="lvVaMsg" style="margin:6px 0 0"></p>
+        </section>
+        <section>
+          <h2>Coming next <span class="opt">to build together</span></h2>
+          <ul class="lvtodo">
+            <li>Viewer count, followers and subs today (needs the Twitch login)</li>
+            <li>Alerts history: raids, subs, bits and follows with times</li>
+            <li>Stream health warnings (dropped frames, low bitrate, OBS lagging)</li>
+            <li>Pop-out window to keep on a second monitor</li>
+            <li>Timers and notes (stream length, break reminders)</li>
+          </ul>
+          <p class="note">Tell me what else you'd want on here and we'll add it.</p>
+        </section>
+      </div>
+      <div class="col">
+        <section>
+          <h2>Stream health</h2>
+          <div class="lvtiles">
+            <div class="lvtile"><span class="k">Live for</span><b id="lvUp">–</b></div>
+            <div class="lvtile"><span class="k">Bitrate</span><b id="lvKbps">–</b></div>
+            <div class="lvtile"><span class="k">Dropped frames</span><b id="lvDrop">–</b></div>
+            <div class="lvtile"><span class="k">OBS frame rate</span><b id="lvFpsV">–</b></div>
+            <div class="lvtile"><span class="k">OBS lagging</span><b id="lvLag">–</b></div>
+            <div class="lvtile"><span class="k">OBS CPU</span><b id="lvCpu">–</b></div>
+            <div class="lvtile"><span class="k">Recording</span><b id="lvRecT">–</b></div>
+            <div class="lvtile"><span class="k">Webcam</span><b id="lvCam">–</b></div>
+          </div>
+          <p class="note" id="lvMsg"></p>
+        </section>
+        <section>
+          <h2>Chat &amp; events</h2>
+          <div class="lvchat" id="lvChat"><p class="note">Chat shows here once Twitch chat is connected (Connections tab).</p></div>
+        </section>
+      </div>
+    </div>
+  </div>

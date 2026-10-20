@@ -1,0 +1,212 @@
+[
+ {
+  "file": "shared/page-head.html"
+ },
+ {
+  "text": "<style>"
+ },
+ {
+  "file": "shared/styles.css"
+ },
+ {
+  "text": "</style>"
+ },
+ {
+  "file": "shared/page-header.html"
+ },
+ {
+  "file": "tabs/connections/connections.html"
+ },
+ {
+  "file": "tabs/pads/pads.html"
+ },
+ {
+  "file": "tabs/shoutouts/shoutouts.html"
+ },
+ {
+  "file": "tabs/chat-overlay/chat-overlay.html"
+ },
+ {
+  "file": "tabs/triggers/triggers.html"
+ },
+ {
+  "file": "tabs/voice/voice.html"
+ },
+ {
+  "file": "tabs/keybinds/keybinds.html"
+ },
+ {
+  "file": "tabs/stream-view/stream-view.html"
+ },
+ {
+  "file": "tabs/webcam/webcam.html"
+ },
+ {
+  "file": "shared/page-footer.html"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "shared/helpers.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "shared/core.js"
+ },
+ {
+  "file": "tabs/pads/pads.js"
+ },
+ {
+  "file": "shared/core-backup.js"
+ },
+ {
+  "file": "tabs/pads/midi.js"
+ },
+ {
+  "file": "shared/core-start.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "shared/twitch.js"
+ },
+ {
+  "file": "tabs/shoutouts/shoutouts.js"
+ },
+ {
+  "file": "shared/twitch-start.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/chat-overlay/chat-overlay.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "shared/backup-all.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/webcam/objects-data.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/webcam/webcam.js"
+ },
+ {
+  "file": "tabs/webcam/face-tracking.js"
+ },
+ {
+  "file": "tabs/webcam/tos-camera.js"
+ },
+ {
+  "file": "tabs/webcam/advanced-tracking.js"
+ },
+ {
+  "file": "tabs/webcam/mic-reactions.js"
+ },
+ {
+  "file": "tabs/webcam/clips-grade-vtuber.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/connections/connections.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/chat-overlay/screen-chat.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/webcam/settings-tabs.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/stream-view/stream-view.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/webcam/tracker-greying.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/voice/voice.js"
+ },
+ {
+  "file": "tabs/triggers/triggers.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "shared/section-nav.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "file": "shared/page-end.html"
+ }
+]

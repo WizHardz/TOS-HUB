@@ -1,0 +1,387 @@
+  <div class="tab hide" id="tab-cam">
+    <div class="cols camcols">
+      <div class="col">
+        <section class="hero camleft" id="camLeft">
+        <div class="padhead">
+          <h2 style="margin:0">Live preview</h2>
+          <label class="inl">Show
+            <select id="camView" title="What the preview shows"><option value="cam">Cam + frame</option><option value="direct">Camera direct (smoothest)</option><option value="program">Whole stream</option></select></label>
+          <label class="inl">Smoothness
+            <select id="camFps"><option value="5">5 fps</option><option value="10">10 fps</option><option value="15">15 fps</option><option value="30">30 fps</option></select></label>
+          <button class="ghost icon" id="camDbg" title="Tracking view: show what TOS HUB is tracking on this preview (only you see it, never your stream)" aria-label="Tracking view">👁</button>
+          <button class="ghost icon" id="camReload" title="Refresh the preview (if it looks stuck). Your stream isn't touched." aria-label="Refresh the preview">↻</button>
+          <button class="ghost icon" id="camPause" title="Pause the preview" aria-label="Pause the preview">⏸</button>
+        </div>
+        <div class="camstage" id="camStage">
+          <canvas id="camCv"></canvas>
+          <video id="camVid" muted playsinline class="hide"></video>
+          <div class="camph" id="camPh"><span></span></div>
+          <iframe id="camFrame" title="Cam frame preview"></iframe>
+        </div>
+        <p class="note hide" id="camPrevMsg" style="margin:6px 0 0"></p>
+        <div class="fxbar" id="fxBar"></div>
+        <div class="frstatus" id="frStatus"><span class="fsdot"></span><span id="frStatusText">Checking whether effects can reach your stream…</span><button class="primary hide" id="frFix">Fix it</button></div>
+      </section>
+      </div>
+      <div class="col">
+        <nav class="camnav" id="camNav" aria-label="Webcam settings">
+          <a href="#secCamera">Camera</a><a href="#secShape">Shape</a><a href="#secFrame">Frame look</a><a href="#secFace">Face</a><a href="#secAdv">Advanced</a><a href="#secPresets">Presets</a><a href="#secChat">Chat &amp; alerts</a>
+        </nav>
+        <section id="secCamera" class="camsec">
+        <h2>Camera</h2>
+        <div class="modesw" id="tosMode">
+          <button type="button" data-m="obs">📷 OBS webcam</button>
+          <button type="button" data-m="tos">✨ TOS HUB camera</button>
+        </div>
+        <div class="tosbox hide" id="tosBox">
+          <p class="note" style="margin:0 0 10px">TOS HUB opens your webcam itself and sends the finished cam (picture, frame, shape and effects) to OBS as one source. Face effects and face follow work on every frame, perfectly in sync. Keep TOS HUB open while you stream.</p>
+          <div class="row">
+            <label>Camera<select id="tosDev"><option value="">Same camera as OBS (automatic)</option></select></label>
+            <label>Quality<select id="tosSize"><option value="720">720p</option><option value="1080">1080p</option></select></label>
+            <label id="tosFpsL">Frame rate<select id="tosFps"><option value="30">30 fps</option><option value="60">60 fps</option></select></label>
+          </div>
+          <div class="row hide" id="gpRow" style="margin-top:8px">
+            <label>GoPro lens<select id="gpFov"><option value="4">Linear (no fisheye)</option><option value="0">Wide</option><option value="2">Narrow</option></select></label>
+            <label>GoPro address<input id="gpIp" placeholder="found by itself" autocomplete="off" spellcheck="false"></label>
+            <button class="ghost" id="gpCheck" type="button" title="Shows where the GoPro picture is getting stuck">GoPro check</button>
+          </div>
+          <div class="gpdiag hide" id="gpDiag"><p id="gpVerdict"></p><pre id="gpReport"></pre><button class="ghost" id="gpCopy" type="button">Copy the details</button></div>
+          <p class="note hide" id="gpNote" style="margin:8px 0 0">Works with a GoPro HERO9 or newer (your HERO10 Black included), with no GoPro app needed. Switch it on and plug it in with a USB-C cable that carries data (the one that came with it is fine). Nothing to change on a HERO10: it has no USB setting, just plug in. Only a HERO9 has <b>Preferences → Connections → USB Connection</b>, which needs to be on <b>GoPro Connect</b>. The first time, Windows may ask if TOS HUB can use networks: click <b>Allow</b>, because that's how the camera sends its picture over USB. For long streams, GoPro suggests taking the battery out and running it on USB power, so it stays cooler.</p>
+          <div class="row" style="margin-top:8px;align-items:center">
+            <label class="check wide"><input type="checkbox" id="tosMirror"> Mirror the picture</label>
+            <label class="check wide" title="Shows the TOS HUB test card in OBS instead of nothing when the camera has no picture"><input type="checkbox" id="tosCard"> Test card when the camera's off</label>
+            <button class="primary" id="tosGo">Switch to the TOS HUB camera</button>
+            <button class="ghost" id="tosRestart" title="Turn the camera off and on again">Restart camera</button>
+          </div>
+          <p class="note" id="tosMsg"></p>
+          <details class="trkmap camtips"><summary>Camera tips: falling asleep, running hot</summary>
+          <p class="note">If your camera has its own sleep timer (OBSBOT cameras have <b>Auto Sleep</b> in OBSBOT Center), turn it off or set it long. TOS HUB will also wake the camera if it freezes or goes black (it gives up after 3 tries in case it's overheating). <b>Camera running hot?</b> 720p at 30 fps is much easier on it, and TOS HUB rests it when OBS isn't showing it.</p>
+          </details>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label id="camSrcRow">Webcam source in OBS<select id="camSrc"><option value="">Connect OBS on the Connections tab first</option></select></label>
+          <button id="camToggle">Hide cam</button>
+          <button class="ghost" id="camReset" title="Removes the shape, face follow, zoom and crop TOS HUB added">Reset camera</button>
+        </div>
+        <p class="note" id="camWhere"></p>
+        <p class="note" id="gpHint">Using a <b>GoPro</b>? Click <b>✨ TOS HUB camera</b> above, then choose <b>📷 GoPro over USB</b> under Camera.</p>
+        <div class="row" style="align-items:center;margin-top:10px">
+          <label style="min-width:200px">Zoom <span class="val" id="camZoomVal">1.0×</span>
+            <input type="range" id="camZoom" min="100" max="300" step="5" value="100"></label>
+          <button class="ghost" id="camZoomReset">Reset zoom</button>
+        </div>
+
+        </section>
+        <section id="secShape" class="camsec">
+        <h2>Cam shape</h2>
+        <div class="row" style="align-items:flex-end">
+          <label>Shape<select id="shpType"><option value="square">Square corners</option><option value="round">Rounded corners</option><option value="circle">Circle / oval</option><option value="hex">Hexagon</option><option value="gem">Gem</option><option value="shield">Shield</option><option value="heart">Heart</option><option value="arch">Arch</option></select></label>
+          <label>Roundness <span class="val" id="shpRv"></span><input type="range" id="shpR" min="0" max="120" step="1"></label>
+          <button class="ghost" id="shpSquare" title="Crop the cam to a square, for a proper circle">Make it square</button>
+        </div>
+        <p class="note" id="shpMsg">Shapes your actual webcam picture in OBS. The frame matches it.</p>
+        <p class="note" style="margin-top:4px">Tip: presets remember the shape too, and pads can change it (“Change cam shape”).</p>
+
+        </section>
+        <section id="secFrame" class="camsec">
+        <h2>Frame look</h2>
+        <div class="row">
+          <label>Style<select id="lkStyle"><option value="neon">WizHardz Neon</option><option value="pixel">8-Bit Pixel</option><option value="clean">Clean</option><option value="arcane">Arcane Gold</option><option value="glitch">Glitch</option><option value="rainbow">RGB Rainbow</option><option value="comic">Comic Pop</option><option value="none">No frame (effects only)</option></select></label>
+          <label>Name on the frame<input id="lkName" placeholder="your name" autocomplete="off"></label>
+          <label>Small text under it<input id="lkSub" placeholder="e.g. !commands" autocomplete="off"></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div><div class="minilabel">Main colour</div><div class="swatches" id="lkC1"></div></div>
+          <div><div class="minilabel">Second colour</div><div class="swatches" id="lkC2"></div></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label>Border thickness <span class="val" id="lkTv"></span><input type="range" id="lkT" min="0" max="30" step="1"></label>
+          <label>Corner roundness <span class="val" id="lkRv"></span><input type="range" id="lkR" min="0" max="120" step="1"></label>
+          <label>Glow <span class="val" id="lkGv"></span><input type="range" id="lkG" min="0" max="60" step="1"></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label>Name tag corner<select id="lkTag"><option value="bl">Bottom left</option><option value="br">Bottom right</option><option value="tl">Top left</option><option value="tr">Top right</option><option value="none">No name tag</option></select></label>
+          <label>Name tag size <span class="val" id="lkTSv"></span><input type="range" id="lkTS" min="50" max="200" step="5"></label>
+          <label>Effect volume <span class="val" id="lkVv"></span><input type="range" id="lkV" min="0" max="100" step="5"></label>
+        </div>
+        <div class="row" style="margin-top:8px;gap:22px">
+          <label class="check wide"><input type="checkbox" id="lkPulse"> Pulsing glow</label>
+          <label class="check wide"><input type="checkbox" id="lkRunes"> Spinning corner runes</label>
+          <label class="check wide"><input type="checkbox" id="lkSound"> Effect sounds</label>
+        </div>
+
+        <div id="frPlace">
+        <h2 style="margin:22px 0 10px">Put the frame in OBS</h2>
+        <div class="row">
+          <label>Frame source in OBS<select id="frSrc"><option value="">Connect OBS on the Connections tab first</option></select></label>
+          <button class="primary" id="frCreate">Create the frame</button>
+          <button id="frFit">Fit to cam</button>
+        </div>
+        <label class="check wide" style="margin-top:8px"><input type="checkbox" id="frFollow"> Frame follows the cam (presets, zoom, show/hide and shake)</label>
+        </div>
+        <p class="note hide" id="frTosNote" style="margin-top:14px">You're using the TOS HUB camera, so the frame is built into it. There's nothing else to put in OBS.</p>
+        <p class="note" id="frMsg"></p>
+        <p class="note">The line under the preview shows whether effects are reaching your stream. “Create the frame” adds it on top of your cam and fits it. Changes to the look above are sent to OBS automatically. The frame's address includes your OBS password so effects can reach it, so it stays on this computer.</p>
+      </section>
+        <section id="secFace" class="camsec">
+        <h2>Face tracking</h2>
+        <label class="check wide"><input type="checkbox" id="fcFollow"> Keep my face centred (the cam zooms in and follows you)</label>
+        <div class="row" style="align-items:center;margin-top:8px">
+          <label style="min-width:180px">Follow zoom <span class="val" id="fcZoomV"></span><input type="range" id="fcZoom" min="110" max="250" step="5"></label>
+          <label>Follow speed<select id="fcSpeed"><option value="slow">Slow &amp; smooth</option><option value="normal">Normal</option><option value="fast">Fast</option></select></label>
+        </div>
+        <div class="row" style="margin-top:8px;gap:22px">
+          <label class="check wide"><input type="checkbox" id="fcAim"> Aim effects at my face</label>
+          <label class="check wide"><input type="checkbox" id="fcBox"> Show the face box on the preview</label>
+        </div>
+        <p class="note" id="fcMsg" data-x="1">Wizard hat, laser eyes and halo stick to your face. Face tracking runs on this computer; nothing is sent anywhere.</p>
+
+        </section>
+        <section id="secAdv" class="camsec">
+        <h2>Advanced tracking <span class="opt">TOS HUB camera</span></h2>
+        <p class="note" id="trkMsg"></p>
+        <div class="trkmasters" id="trkMasters">
+          <label class="mswitch"><input type="checkbox" id="useFace"><span class="mi">🙂</span><span class="mt">Face tracking</span></label>
+          <label class="mswitch"><input type="checkbox" id="useHands"><span class="mi">✋</span><span class="mt">Hand tracking</span></label>
+          <label class="mswitch"><input type="checkbox" id="useBody"><span class="mi">🧍</span><span class="mt">Body tracking</span></label>
+          <label class="mswitch"><input type="checkbox" id="useSeg"><span class="mi">✂️</span><span class="mt">Background cut-out</span></label>
+        </div>
+        <p class="note" id="trkMastersNote" style="margin:6px 0 10px">Switch any of these off and TOS HUB stops that tracking completely (less work for your PC). Settings that need it turn grey.</p>
+        <div class="row trkmain">
+          <label class="check wide" title="Follows 478 points on your face"><input type="checkbox" id="trkMesh"> Detailed face tracking</label>
+          <label class="check wide"><input type="checkbox" id="trkExpr"> Expression triggers</label>
+          <label class="check wide"><input type="checkbox" id="trkHands"> Hand gestures</label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label>Face paint<select id="trkPaint"><option value="none">None</option><option value="war">War paint</option><option value="runes">Glowing runes</option><option value="skull">Skull</option><option value="beard">Wizard beard</option><option value="eyes">Glowing eyes</option><option value="em">🟩 Just my eyes &amp; mouth (green screen)</option><option value="emclear">Just my eyes &amp; mouth (see-through)</option></select></label>
+          <label>Background<select id="trkBg"><option value="none">Keep my room</option><option value="room">Keep my room (effects can go behind me)</option><option value="blur">Blur my room</option><option value="stars">Starfield</option><option value="grid">Neon grid</option><option value="aurora">Aurora</option><option value="image">My own picture</option><option value="green">Green screen</option><option value="remove">Remove it (just me)</option></select></label>
+        </div>
+        <div class="row hide" id="trkBlurRow" style="margin-top:8px"><label>Blur amount <span class="val" id="trkBlurV"></span><input type="range" id="trkBlur" min="4" max="40" step="1"></label></div>
+        <div class="row hide" id="trkBgPick" style="margin-top:8px"><button class="ghost" id="trkBgBtn">Choose a picture…</button><input type="file" id="trkBgFile" accept="image/*" class="hide"></div>
+        <p class="note hide" id="trkEmNote" style="margin-top:6px">Just your eyes and mouth: everything else turns into green screen. Pick <b>No frame</b> as the frame style for a clean look. To key it out in OBS, add a <b>Chroma Key</b> filter to the TOS HUB Camera source, or choose the see-through version and skip the keying.</p>
+        <label class="check wide" style="margin-top:8px"><input type="checkbox" id="trkBehind"> Portal, magic circle, fire and more can appear behind me (when the background is cut out)</label>
+        <details class="trkmap"><summary>Smoothing &amp; cut-out</summary>
+          <div class="row"><label>Tracking smoothness <span class="val" id="trkSmoothV"></span><input type="range" id="trkSmooth" min="0" max="100" step="5"></label></div>
+          <label class="check wide"><input type="checkbox" id="trkPredict"> Fill in between tracking updates (props and paint glide instead of stepping, great on slower PCs)</label>
+          <p class="note" style="margin:2px 0 8px">Low = fast and twitchy, high = extra steady (props and paint stop trembling).</p>
+          <div class="row"><label>Cut-out edge softness <span class="val" id="trkSoftV"></span><input type="range" id="trkSoft" min="0" max="16" step="1"></label>
+            <label>Cut-out size <span class="val" id="trkCutV"></span><input type="range" id="trkCut" min="-50" max="50" step="5"></label></div>
+          <p class="note" style="margin:2px 0 0">If your room shows around you as a halo, make the cut-out size smaller.</p>
+        </details>
+        <details class="trkmap"><summary>Camera operator &amp; two faces</summary>
+          <div class="row"><label>Framing (when “Keep my face centred” is on)<select id="trkFraming"><option value="close">Close-up</option><option value="hs">Head &amp; shoulders</option><option value="wide">Wide</option><option value="body">Upper body (needs full-body tracking)</option></select></label>
+            <label>Faces<select id="trkFaces"><option value="1">Just me</option><option value="2">Two people</option></select></label></div>
+          <div class="row" style="gap:18px;margin-top:6px"><label class="check wide"><input type="checkbox" id="trkLean"> Punch in when I lean in</label>
+            <label class="check wide"><input type="checkbox" id="trkBoth"> Paint &amp; props on both faces</label></div>
+        </details>
+        <details class="trkmap"><summary>Full-screen effects</summary>
+          <p class="note" style="margin:0 0 8px">Effects can also fill your whole stream (right over your game), not just your cam. TOS HUB adds one see-through layer to OBS for this; it sits on top and stays empty until an effect plays.</p>
+          <div class="row" style="gap:8px"><button type="button" class="primary" id="scrAdd">🖥️ Add the full-screen layer to this scene</button><button type="button" class="ghost" id="scrAll">Add it to every scene</button></div>
+          <p class="note" id="scrMsg" style="margin:6px 0 0"></p>
+          <p class="note" style="margin:6px 0 0">Then switch the effect buttons under the preview to <b>🖥️ Whole screen</b>, or pick a <b>Whole screen</b> action in the <b>Triggers</b> tab. Works for sparkles, zap, fire, frost, boom, hearts, confetti, magic circle, portal, meteor, bubbles and smoke.</p>
+        </details>
+        <details class="trkmap"><summary>My own gestures and poses</summary>
+          <div id="handCtlBox">
+            <p class="note" style="margin:0 0 8px">Pick the hand sign for each hand job. Any gesture works, including <b>⭐ your own</b> (record them under My own hand gestures).</p>
+            <div class="hcgrid" id="hcGrid"></div>
+            <p class="note" id="hcWarn" style="margin:6px 0 0"></p>
+            <p class="note" style="margin:8px 0 4px">Switch things on and off with a gesture too:</p>
+            <div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="ghost" data-hcrule="draw/toggle">＋ Gesture: drawing on / off</button><button type="button" class="ghost" data-hcrule="draw/clear">＋ Gesture: clear the drawing</button><button type="button" class="ghost" data-hcrule="trk/hands">＋ Gesture: hand tracking on / off</button></div>
+          </div>
+          <div id="myGestBox">
+            <p class="note" style="margin:0 0 8px">Teach TOS HUB your own hand signs: 🤘 rock on, 🤙 call me, 👌 OK, 🤞 crossed fingers, anything. Hold it up to the camera and click <b>Record</b>; it learns it in about a second. Then use it in <b>Triggers</b> (Tracking → Hands) or <b>Keybinds</b> like any other gesture. Works with either hand.</p>
+            <div class="row" style="align-items:flex-end"><label style="flex:2">Name<input id="mgName" placeholder="e.g. 🤘 Rock on" autocomplete="off"></label><button type="button" class="primary" id="mgRec">⏺ Record a gesture</button></div>
+            <p class="note" id="mgMsg" style="margin:6px 0 0"></p>
+            <div class="mylist" id="mgList"></div>
+          </div>
+          <div id="myPoseBox">
+            <p class="note" style="margin:0 0 8px">Teach TOS HUB your own poses: a superhero landing, the floss, pointing at chat, anything with your arms. Strike the pose, click <b>Record</b>, hold it for a second. Use it in <b>Triggers</b> (Tracking → Body) or <b>Keybinds</b>. Needs your shoulders, elbows and hands in shot.</p>
+            <div class="row" style="align-items:flex-end"><label style="flex:2">Name<input id="mpName" placeholder="e.g. 🦸 Superhero" autocomplete="off"></label><button type="button" class="primary" id="mpRec">⏺ Record a pose</button></div>
+            <p class="note" id="mpMsg" style="margin:6px 0 0"></p>
+            <div class="mylist" id="mpList"></div>
+          </div>
+        </details>
+        <details class="trkmap"><summary>Triggers</summary>
+          <p class="note" style="margin:0 0 8px">What sets off what: hotkeys, your voice, your hands and face, mic sounds and Twitch. Each trigger reads <b>When … → Do …</b>; click one to change it. One trigger can do several things at once. To make TOS HUB <b>press keys</b> for you, use the <b>Keybinds</b> tab.</p>
+          <div class="rtools"><input id="rulesFind" type="search" placeholder="🔎 Find (e.g. fire, thumbs up, clap, scene, reward)" autocomplete="off" spellcheck="false">
+            <button type="button" class="ghost" id="rulesClear" title="Remove every trigger (you can undo it)">🗑 Remove all</button><button type="button" class="ghost hide" id="rulesUndo">↶ Undo</button></div>
+          <p class="note" id="rulesMsg" style="margin:6px 0 0"></p>
+          <div class="rlist" id="rulesList"></div>
+          <div class="row" style="margin-top:8px;align-items:center;justify-content:space-between"><span class="note" id="rulesCount" style="margin:0"></span><label class="check wide"><input type="checkbox" id="rulesBy"> Show the viewer's name with Twitch effects (“✨ name”)</label></div>
+        </details>
+        <details class="trkmap"><summary>Spells &amp; hand props</summary>
+          <label class="check wide"><input type="checkbox" id="trkSpells"> Draw spells in the air: point with one finger and trace a shape</label>
+          <div class="mapgrid" id="spellGrid"></div>
+          <div class="row"><label>Spell sensitivity<input type="range" id="trkSpellSens" min="0" max="100" step="5"></label></div>
+          <div class="row" style="gap:18px;margin-top:6px"><label class="check wide"><input type="checkbox" id="trkFireball"> 🔥 Fireball in my open hand (make a fist to throw it)</label>
+            <label class="check wide"><input type="checkbox" id="trkWand"> 🪄 Wand when I point</label></div>
+        </details>
+        <details class="trkmap"><summary>Combos</summary>
+          <label class="check wide"><input type="checkbox" id="comboOn"> Two moves in a row set off a combo effect (within 2.5 seconds)</label>
+          <div id="comboList"></div>
+          <button type="button" class="ghost" id="comboAdd" style="margin-top:8px">+ Add a combo</button>
+          <p class="note" style="margin:6px 0 0">Mix anything: claps, snaps, body poses, hand gestures, spells and faces. Each move still does its own thing too.</p>
+        </details>
+        <details class="trkmap"><summary>Mood detection</summary>
+          <label class="check wide"><input type="checkbox" id="trkMood"> React to my mood</label>
+          <div class="mapgrid" id="moodGrid"></div>
+          <div class="row"><label>Wait between mood reactions (seconds)<input type="number" id="trkMoodCd" min="3" max="120"></label></div>
+        </details>
+        <details class="trkmap"><summary>Mic reactions</summary>
+          <label class="check wide"><input type="checkbox" id="micOn"> React to how loud I am (only the level is measured; nothing is recorded or sent)</label>
+          <div class="micmeter" id="micMeterBox" title="Your mic level. The red line is “Loud enough”: going past it counts as shouting."><div class="mfill" id="micMeter"></div><div class="mpeak" id="micPeak"></div><div class="mthr" id="micThrMark"></div></div>
+          <div class="micread"><span id="micDb">Mic off</span><span id="micHeard"></span><button type="button" class="ghost" id="micCal" title="Talk normally for 4 seconds and TOS HUB sets the shout level just above it">🎙 Set from my voice</button><button type="button" class="ghost" id="micTestBtn" title="A 30-second test: TOS HUB checks your levels and learns what your claps and snaps sound like">🧪 Mic test</button></div>
+          <div class="mtest hide" id="micTest">
+            <div class="mthead"><b>🧪 Mic test</b><span class="note" style="margin:0">Effects stay off while you test. Keep your game and music quiet.</span><button type="button" class="ghost icon" id="mtClose" title="Close the mic test" aria-label="Close">✕</button></div>
+            <ol class="mtsteps" id="mtSteps"></ol>
+            <div class="mtres" id="mtRes"></div>
+            <div class="row" style="margin-top:8px;align-items:center"><button type="button" class="primary" id="mtGo">Start the test</button><button type="button" class="ghost" id="mtPractice" title="Clap, snap or shout and see what TOS HUB hears, without setting off any effects">🎯 Practice (no effects)</button><button type="button" class="ghost" id="mtForget" title="Go back to the built-in clap and snap detection">Forget my claps &amp; snaps</button></div>
+            <div class="mtlog" id="mtLog"></div>
+          </div>
+          <div class="row"><label>Microphone<span class="micsel"><select id="micDev"><option value="">Default microphone</option></select><button type="button" class="ghost" id="micRefresh" title="Look for microphones again and reconnect (use this if you switched a mic on after TOS HUB)">↻ Refresh</button></span></label>
+            <label>Loud enough at <span class="val" id="micThrV"></span><input type="range" id="micThr" min="-45" max="-3" step="1"></label></div>
+          <p class="note" id="micDevHint" style="margin:4px 0 0"></p>
+          <div class="row"><label>Listen to<select id="micCh" title="Which channels of this input to listen to. Use this to hear only your mic on a multitrack input."><option value="all">Every channel</option><option value="L">Left only</option><option value="R">Right only</option><option value="p1">Main mix (tracks 1–2)</option><option value="p2">Fader 1 (tracks 3–4)</option><option value="p3">Fader 2 (tracks 5–6)</option><option value="p4">Fader 3 (tracks 7–8)</option><option value="p5">Fader 4 (tracks 9–10)</option><option value="p6">Fader 5 (tracks 11–12)</option><option value="p7">Fader 6 (tracks 13–14)</option><option value="p8">Fader 7 (tracks 15–16)</option><option value="p9">Fader 8 (tracks 17–18)</option><option value="p10">Fader 9 (tracks 19–20)</option></select></label>
+            <label>My mic<select id="micProfile" title="Tunes how claps, snaps and bangs are picked out"><option value="">Any mic</option><option value="sm7b">SM7B (or other dynamic) through a RØDECaster</option></select></label></div>
+          <p class="note" id="micChNote" style="margin:4px 0 0"></p>
+          <div class="mapgrid" id="micGrid"></div>
+          <p class="note" id="micMsg"></p>
+          <details class="rodeguide" id="rodeGuide"><summary>🎙 SM7B + RØDECaster Duo setup guide</summary>
+            <p class="note" style="margin:6px 0 8px">Tick things off as you go (TOS HUB remembers). Menu names are from the Duo's screen; they can differ a little between firmware versions.</p>
+            <div class="rgsteps" id="rgSteps"></div>
+          </details>
+        </details>
+        <details class="trkmap"><summary>Auto clips</summary>
+          <label class="check wide"><input type="checkbox" id="clipOn"> Save a clip in OBS when something big happens</label>
+          <div class="row" style="gap:18px;margin-top:6px"><label class="check wide"><input type="checkbox" id="clipLoud"> Big moments (loud + a reaction)</label>
+            <label class="check wide"><input type="checkbox" id="clipSpell"> Spells &amp; fireballs</label><label class="check wide"><input type="checkbox" id="clipRaid"> Raids</label></div>
+          <div class="row" style="margin-top:8px"><button class="ghost" id="clipBuf">Turn on OBS replay buffer</button><button class="ghost" id="clipNow">Save a clip now</button></div>
+          <p class="note" id="clipMsg">Uses OBS's Replay Buffer (OBS → Settings → Output → Replay Buffer). The clip includes the seconds before the moment.</p>
+          <div id="clipList" class="cliplist"></div>
+        </details>
+        <details class="trkmap"><summary>Become an object</summary>
+          <p class="note" style="margin:0 0 8px">Turn into a real thing that talks with your own eyes and mouth. Pick one to stay as it, or use the <b>🍊 Become an object</b> effect (pads, chat, poses) for 12 seconds as a random one. Needs the <b>✨ TOS HUB camera</b> and face tracking.</p>
+          <div class="fxcats" id="objCats" style="justify-content:flex-start;margin:0 0 8px"></div>
+          <div class="objgrid" id="objGrid"></div>
+          <input type="file" id="objFile" accept="image/*" class="hide">
+          <p class="note" id="objMsg" style="margin:6px 0 0">Add any picture: click <b>＋ My own picture</b>, drag one onto the grid, or copy a picture (e.g. right-click → Copy image on a website) and press <b>Ctrl + V</b> here. TOS HUB's AI cuts the thing out of its background by itself, and it stays on this PC.</p>
+          <div class="row" style="margin-top:8px;align-items:center"><button type="button" class="ghost" id="objPhotoAll">📷 Real photos for everything</button><button type="button" class="ghost hide" id="objPhotoStop">Stop</button><button type="button" class="ghost" id="objPhotoReset">↩ All back to the originals</button><span class="note" id="objAllMsg" style="margin:0"></span></div>
+          <div class="row" style="margin-top:8px"><label>Background<select id="objBg"><option value="clear">See-through (just the object on your stream)</option><option value="green">Green screen</option><option value="blur">Your room, blurred</option><option value="colour">Frame colours</option></select></label>
+            <label>Size <span class="val" id="objSizeV"></span><input type="range" id="objSize" min="40" max="220" step="5"></label>
+            <label>Bigger eyes &amp; mouth (all objects) <span class="val" id="objFeatV"></span><input type="range" id="objFeat" min="100" max="250" step="5"></label></div>
+          <div class="row" style="margin-top:6px"><label class="check wide"><input type="checkbox" id="objNeck"> 🦒 Twist like a neck (the bottom stays put, the top turns and bends with your head)</label>
+            <label>Twist amount <span class="val" id="objNeckAmtV"></span><input type="range" id="objNeckAmt" min="20" max="200" step="10"></label></div>
+          <div class="row" style="margin-top:6px"><label class="check wide"><input type="checkbox" id="objFaceTop"> Put my face near the top of things (🎯 Place the face still wins for any object you've placed)</label></div>
+          <div class="row" style="margin-top:6px"><label class="check wide"><input type="checkbox" id="objFollow"> Follows my head around (off: stays in the middle)</label>
+            <label>Blend my skin into it <span class="val" id="objBlendV"></span><input type="range" id="objBlend" min="0" max="100" step="5"></label></div>
+          <div class="row hide" id="objAdjRow" style="margin-top:6px"><label>Face height on <b id="objAdjName"></b><input type="range" id="objFaceY" min="-30" max="30" step="1"></label>
+            <label>Eyes &amp; mouth size<input type="range" id="objFaceS" min="-60" max="80" step="5"></label><button type="button" class="ghost" id="objPlaceBtn">🎯 Place the face</button><button type="button" class="ghost" id="objPhotoBtn">📷 Real photo</button><button type="button" class="ghost hide" id="objPhotoUndo">↩ Back to the original</button><button type="button" class="ghost hide" id="objDel">Remove this picture</button></div>
+          <p class="note hide" id="objCredit" style="margin:4px 0 0;font-size:11.5px"></p>
+          <div class="objplace hide" id="objPhoto">
+            <p class="note" style="margin:0 0 6px"><b>📷 Real photo for <span id="ophName"></span>:</b> pick a photo and TOS HUB's AI cuts it out. Photos come from Wikimedia Commons (free to use). Try other words if nothing looks right, e.g. "red apple white background".</p>
+            <div class="row" style="align-items:center"><input id="ophQ" type="text" style="flex:1;min-width:160px" placeholder="What to search for"><button type="button" class="primary" id="ophGo">Search</button><button type="button" class="ghost" id="ophOwn">Use my own photo…</button><button type="button" class="ghost" id="ophClose">Close</button></div>
+            <div class="ophgrid" id="ophRes"></div>
+            <p class="note" id="ophMsg" style="margin:6px 0 0"></p>
+            <input type="file" id="ophFile" accept="image/*" class="hide">
+          </div>
+          <div class="objplace hide" id="objPlace">
+            <p class="note" style="margin:0 0 6px"><b>Place the face:</b> drag the face onto the spot, and use the slider (or the mouse wheel) to size it. It updates on your cam as you go.</p>
+            <div class="opstage" id="opStage"><img id="opImg" alt=""><svg id="opFace" viewBox="-60 -50 120 110"><circle cx="-26" cy="-17" r="13"/><circle cx="26" cy="-17" r="13"/><circle cx="-26" cy="-17" r="5" class="pu"/><circle cx="26" cy="-17" r="5" class="pu"/><path d="M-26 30 Q0 52 26 30 Q0 40 -26 30Z"/></svg></div>
+            <div class="row" style="margin-top:6px;align-items:center"><label style="flex:1">Face size<input type="range" id="opSize" min="10" max="80" step="1"></label><button type="button" class="ghost" id="opReset">Reset</button><button type="button" class="primary" id="opDone">Done</button></div>
+          </div>
+          <div class="row" style="margin-top:6px"><label>The 🍊 effect turns me into<select id="objTimed"></select></label></div>
+          <p class="note" style="margin:6px 0 0;font-size:11.5px">Fruit &amp; veg photos: Fruits-360 dataset by Mihai Oltean (CC BY-SA 4.0). Other objects: Microsoft Fluent Emoji 3D (MIT licence). 🧊 Real 3D models: Khronos glTF Sample Assets (CC0 / CC BY 4.0, see obj3d/CREDITS.txt). 📷 Real photos: Wikimedia Commons (each photo's author and licence shows under the object).</p>
+        </details>
+        <details class="trkmap"><summary>Draw in the air</summary>
+          <label class="check wide"><input type="checkbox" id="drawOn"> Draw with my finger (point with one finger to draw, any other hand shape lifts the pen)</label>
+          <div class="row" style="margin-top:6px"><label>Colour<select id="drawCol"><option value="rainbow">🌈 Rainbow</option><option value="frame">Frame colours</option><option value="#ff3d3d">Red</option><option value="#ffe14d">Yellow</option><option value="#3dff8a">Green</option><option value="#2ff3ff">Cyan</option><option value="#4d7dff">Blue</option><option value="#ff4fd8">Pink</option><option value="#ffffff">White</option></select></label>
+            <label>Style<select id="drawStyle"><option value="neon">✨ Neon glow</option><option value="sparkle">🌟 Neon + sparkles</option><option value="marker">🖍️ Marker</option><option value="fire">🔥 Fire</option></select></label></div>
+          <div class="row" style="margin-top:6px"><label>Line size <span class="val" id="drawSizeV"></span><input type="range" id="drawSize" min="2" max="30" step="1"></label>
+            <label>Fades after<select id="drawFade"><option value="0">Never (until I clear it)</option><option value="3">3 seconds</option><option value="6">6 seconds</option><option value="12">12 seconds</option><option value="30">30 seconds</option></select></label></div>
+          <div class="row" style="margin-top:6px;align-items:center"><label class="check wide"><input type="checkbox" id="drawPalm"> ✋ Hold an open palm up for a second to wipe it clean</label><button type="button" class="ghost" id="drawClear">🧽 Clear the drawing</button></div>
+          <p class="note" style="margin:6px 0 0">Switches the hand tracker on by itself while it's on (as long as Hand tracking is allowed above). While you draw, spells and the finger-gun gesture take a break so they don't go off by accident. Pads can switch drawing on and off and clear it too.</p>
+        </details>
+        <details class="trkmap"><summary>Look: lighting, colour, head props</summary>
+          <div class="row"><label>Auto lighting <span class="val" id="trkLightV"></span><input type="range" id="trkLight" min="0" max="100" step="5"></label>
+            <label>Colour grade<select id="trkGrade"><option value="none">None</option><option value="cine">Cinematic</option><option value="vhs">Retro VHS</option><option value="neon">Neon</option><option value="bw">Black &amp; white</option><option value="warm">Warm</option><option value="cool">Cool</option></select></label></div>
+          <div class="row"><label>Head prop<select id="trkProp"><option value="none">None</option><option value="crown">👑 Crown</option><option value="horns">😈 Devil horns</option><option value="cat">🐱 Cat ears</option><option value="pumpkin">🎃 Pumpkin head</option><option value="viking">⛑️ Viking helmet</option></select></label></div>
+          <p class="note" style="margin:2px 0 0">Colour grades also work with the normal OBS webcam (as an OBS colour filter). Auto lighting, VHS scanlines and head props need the TOS HUB camera.</p>
+        </details>
+        <details class="trkmap" id="bodyBox"><summary>Full-body tracking</summary>
+          <label class="check wide"><input type="checkbox" id="trkBody"> Track my whole body (shoulders, arms, hips and legs)</label>
+          <div class="row" style="margin-top:6px"><label>Body effect<select id="trkBodyFx"><option value="none">None</option><option value="aura">✨ Glowing aura</option><option value="flames">🔥 Shoulder flames</option><option value="trails">🌟 Sparkle trails from my hands</option><option value="skeleton">🦴 Neon skeleton</option><option value="wings_angel">🪽 Angel wings</option><option value="wings_demon">🦇 Demon wings</option><option value="wings_fairy">🧚 Fairy wings</option><option value="afterimage">👥 Afterimages (needs the background cut out)</option></select></label>
+            <label>Colour<select id="trkBodyCol"><option value="theme">Frame colours</option><option value="fire">🔥 Fire</option><option value="ice">🧊 Ice</option><option value="toxic">☢️ Toxic green</option><option value="royal">👑 Royal (gold &amp; purple)</option><option value="blood">🩸 Blood red</option><option value="shadow">🌑 Shadow</option><option value="gold">✨ Gold</option><option value="pink">💗 Pink</option><option value="ocean">🌊 Ocean</option><option value="rainbow">🌈 Rainbow (cycles)</option><option value="custom">🎨 My own colours…</option></select></label></div>
+          <div class="row hide" id="trkBodyCustom" style="margin-top:6px"><label>Inner colour<input type="color" id="trkBodyC1"></label><label>Outer colour<input type="color" id="trkBodyC2"></label></div>
+          <div class="row" style="margin-top:6px"><label>Strength <span class="val" id="trkBodyStrV"></span><input type="range" id="trkBodyStr" min="20" max="160" step="10"></label>
+            <label>Size <span class="val" id="trkBodySizeV"></span><input type="range" id="trkBodySize" min="50" max="160" step="10"></label>
+            <label>Pulse <span class="val" id="trkBodyPulseV"></span><input type="range" id="trkBodyPulse" min="0" max="150" step="10"></label></div>
+          <label class="check wide"><input type="checkbox" id="trkBodyAv"> VTuber avatar copies my arms and lean</label>
+          <label class="check wide"><input type="checkbox" id="trkPoseFx"> Body poses set off effects</label>
+          <div class="mapgrid" id="poseGrid"></div>
+          <p class="note" style="margin:6px 0 0">Works best when the camera can see you from the waist up. Hold a pose for a moment to set it off. Body effects show on your real picture (with an avatar on, its arms copy yours instead). The glowing aura looks best with the background cut out, because it then shines from behind you. Your body never leaves this computer.</p>
+        </details>
+        <details class="trkmap"><summary>VTuber avatar</summary>
+          <div class="row"><label>Show me as<select id="avMode"><option value="off">Myself (no avatar)</option><option value="wizard">🧙 Wizard avatar (built in)</option><option value="vrm">My 3D avatar (VRM file)</option></select></label></div>
+          <div class="row" id="avWizRow" style="margin-top:8px"><label>Wizard colour<select id="avCol"><option value="purple">Purple</option><option value="blue">Blue</option><option value="green">Green</option><option value="red">Red</option><option value="black">Black</option></select></label>
+            <label>Skin<select id="avSkin"><option value="#f2c9a0">Light</option><option value="#d9a27a">Medium</option><option value="#a8714f">Tan</option><option value="#6e4630">Dark</option><option value="#9be3b0">Goblin green</option><option value="#a9b8ff">Frost blue</option></select></label></div>
+          <div class="row" id="avVrmRow" style="margin-top:8px"><button class="ghost" id="avLoad">Load a VRM file…</button><input type="file" id="avFile" accept=".vrm" class="hide"><span class="note" id="avName" style="align-self:center"></span></div>
+          <p class="note" id="avMsg">The avatar copies your head, eyes, eyebrows and mouth. Pick a background above: “Remove it” for a see-through avatar, or a scene. VRM is the standard VTuber format (VRoid Studio, VRoid Hub and others).</p>
+        </details>
+        <details class="trkmap"><summary>Expression triggers: what each face does</summary>
+          <div class="mapgrid" id="exprGrid"></div>
+          <div class="row"><label>Sensitivity<input type="range" id="trkSens" min="0" max="100" step="5"></label><label>Wait between triggers (seconds)<input type="number" id="trkCd" min="1" max="60"></label></div>
+        </details>
+        <details class="trkmap"><summary>Hand tracking</summary>
+          <p class="note hstat" id="handStat">Checking…</p>
+          <label class="check wide"><input type="checkbox" id="trkHandsAlways"> Keep tracking my hands all the time (otherwise it only runs while something needs it: hand triggers, spells, drawing, the wand, the fireball, fire hands)</label>
+          <div class="row" style="margin-top:8px;gap:8px"><button type="button" class="ghost" id="handView">👁 Show what it sees on the preview</button><button type="button" class="ghost" id="handRules">✋ Hand triggers (Triggers list)</button></div>
+          <p class="note" style="margin:6px 0 0">Follows 21 points on each hand (every finger joint and fingertip) for up to two hands. Works best with your hands facing the camera, in good light. For sharper tracking of fast moves, pick <b>Accurate</b> under Speed &amp; accuracy.</p>
+        </details>
+        <details class="trkmap"><summary>Hand gestures: what each gesture does</summary>
+          <div class="mapgrid" id="gestGrid"></div>
+          <div class="row" style="margin-top:6px;gap:18px"><label>🫴 Confetti comes from<select id="trkPalmBoth"><option value="">The hand(s) facing up</option><option value="1">Both hands</option></select></label>
+            <label class="check wide" title="Tick this if “Hand facing up” goes off when your palm faces down instead (check with the 👁 tracking view)"><input type="checkbox" id="trkPalmFlip"> “Hand facing up” is the wrong way round</label></div>
+          <label class="check wide" style="margin-top:6px"><input type="checkbox" id="trkPinchTrail"> ✨ A sparkle trail follows my fingers when I pinch</label>
+        </details>
+        <div class="row" style="margin-top:10px"><label>Run tracking on<select id="trkEngine"><option value="auto">Graphics card (fastest)</option><option value="cpu" title="Use this if the graphics card has trouble">Processor (backup)</option></select></label>
+          <label class="check wide" style="flex-basis:100%"><input type="checkbox" id="trkAuto"> Auto performance: do less tracking work while your game needs the PC, more when it's free (and keep the OBS link as sharp as the PC allows)</label>
+          <label>Tracking models<select id="trkQuality"><option value="fast">Fast (lighter on your PC)</option><option value="accurate">Accurate (bigger models, needs a stronger PC)</option></select></label></div>
+        <details class="trkmap" id="healthBox"><summary>Tracking health</summary>
+          <div class="health" id="trkHealth"><p class="note">Turn on some tracking to see how it's doing.</p></div>
+        </details>
+
+        </section>
+        <section id="secPresets" class="camsec">
+        <h2>Position presets</h2>
+        <div class="kchips" id="presetList"></div>
+        <div class="row" style="margin-top:12px">
+          <label>Save where the cam is right now as<input id="presetName" placeholder="e.g. Corner, Big, Full screen" autocomplete="off"></label>
+          <button class="primary" id="presetSave">Save preset</button>
+        </div>
+        <p class="note">Move and resize your cam in OBS how you like it, then save it here. Click a preset to jump back to it.</p>
+        <label class="check wide" style="margin-top:6px"><input type="checkbox" id="camGlide"> Glide smoothly between presets</label>
+
+        <h2 style="margin:20px 0 10px">Cam filters</h2>
+        <div class="filters" id="camFilters"><span class="note">Pick your webcam source to see its filters.</span></div>
+      </section>
+        <section id="secChat" class="camsec">
+        <h2>Chat &amp; alerts</h2>
+        <label class="check wide"><input type="checkbox" id="chOn"> Let chat set off effects with commands</label>
+        <div class="cmdgrid" id="cmdGrid"></div>
+        <div class="row" style="margin-top:12px">
+          <label>Who can use them<select id="chWho"><option value="all">Everyone</option><option value="subs">Subs, VIPs &amp; mods</option></select></label>
+          <label>Wait between any effects (seconds)<input type="number" id="chGcd" min="0" max="600"></label>
+          <label>Wait per person (seconds)<input type="number" id="chUcd" min="0" max="3600"></label>
+        </div>
+        <h2 style="margin:20px 0 10px">Alerts</h2>
+        <div class="row">
+          <label>When someone raids<select id="alRaid"></select></label>
+          <label>Subs &amp; gifted subs<select id="alSub"></select></label>
+          <label>Bits<select id="alBits"></select></label>
+        </div>
+        <label class="check wide" style="margin-top:8px"><input type="checkbox" id="alBanner"> Show a banner on the frame with their name</label>
+        <p class="note">Uses the Twitch chat connection on the Connections tab, so make sure that's connected.</p>
+      </section>
+      </div>
+    </div>
+  </div>

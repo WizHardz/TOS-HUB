@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chat Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@500;600;700;800&family=Nunito:wght@600;700;800&family=Press+Start+2P&family=Rubik:wght@500;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  body{--scale:1;--bga:.86;--accent:#2ff3ff;--card-rgb:18,8,34;--gap:10px;color:#fff}
+
+  /* =============== layout =============== */
+  #chat{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;
+    gap:calc(var(--gap)*var(--scale));
+    padding:calc(14px*var(--scale));
+    box-sizing:border-box;overflow:hidden;
+  }
+  body.v-top #chat{justify-content:flex-start}
+  body.o-newfirst #chat{flex-direction:column-reverse;justify-content:flex-start}
+  body.o-newfirst.v-top #chat{justify-content:flex-end}
+  body.a-center #chat{align-items:center}
+  body.a-right #chat{align-items:flex-end}
+  body.w-full #chat{align-items:stretch}
+  body.a-center .msg{text-align:center}
+  body.a-center .head{justify-content:center}
+
+  .msg{
+    position:relative;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;
+    --ucol:var(--accent);
+    font-size:calc(18px*var(--scale));line-height:1.35;
+    transform-origin:left bottom;
+  }
+  body.a-right .msg{transform-origin:right bottom}
+  body.a-center .msg{transform-origin:center bottom}
+  body.usercols .msg{--ucol:var(--user-col,var(--accent))}
+  body .msg.event{--ucol:var(--accent)}
+  .head{display:flex;align-items:center;gap:calc(5px*var(--scale));flex-wrap:wrap}
+  .name{color:var(--ucol)}
+  .msg.action .text{font-style:italic;color:var(--ucol)}
+  .emote{height:calc(28px*var(--scale)*var(--escale,1));vertical-align:middle;margin:calc(-4px*var(--scale)) 1px}
+  .emote-only .emote{height:calc(48px*var(--scale)*var(--escale,1))}
+  .ecount{font-weight:800;font-size:.8em;margin:0 .25em 0 .1em;opacity:.9}
+  /* highlighted chatters */
+  .msg.reg{outline:calc(2px*var(--scale)) solid var(--reg);outline-offset:calc(3px*var(--scale))}
+  .msg.reg .name::before{content:"\2605  ";color:var(--reg)}
+  .theme-8bit .msg.reg{--frame:var(--reg);outline:none}
+  .theme-neon .msg.reg{border-color:var(--reg)}
+  /* emote combos */
+  #fx{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+  .combo{position:absolute;transform:translate(-50%,-50%);text-align:center;animation:comboIn .5s cubic-bezier(.2,1.8,.4,1) both}
+  .combo img{display:block;margin:0 auto;height:calc(110px*var(--scale)*var(--escale,1));filter:drop-shadow(0 calc(4px*var(--scale)) 0 rgba(0,0,0,.6))}
+  .combo .ccount{margin-top:calc(4px*var(--scale));font:calc(26px*var(--scale)) Bungee,Rubik,sans-serif;color:#fff;
+    -webkit-text-stroke:calc(1.5px*var(--scale)) #000;text-shadow:calc(3px*var(--scale)) calc(3px*var(--scale)) 0 var(--accent)}
+  .theme-8bit .combo .ccount{font-family:"Press Start 2P",monospace;font-size:calc(18px*var(--scale))}
+  .theme-terminal .combo .ccount{font-family:VT323,monospace;font-size:calc(34px*var(--scale))}
+  .combo.bump .ccount{animation:bump .3s ease}
+  .combo.bye{animation:comboOut .6s ease-in forwards}
+  @keyframes comboIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-20deg)}100%{opacity:1;transform:translate(-50%,-50%)}}
+  @keyframes comboOut{to{opacity:0;transform:translate(-50%,-110%) scale(.8)}}
+  @keyframes bump{50%{transform:scale(1.35)}}
+  .mention{color:#111;background:var(--accent);border-radius:4px;padding:0 4px;font-weight:700}
+  .link{opacity:.65;font-style:italic}
+  .badge{height:calc(18px*var(--scale));width:calc(18px*var(--scale));vertical-align:middle}
+  .chip{
+    font:800 calc(10px*var(--scale)) Inter,sans-serif;letter-spacing:.3px;
+    padding:calc(2px*var(--scale)) calc(6px*var(--scale));
+    border-radius:calc(5px*var(--scale));color:#120822;line-height:1.3;
+  }
+  .chip.host{background:#ff4fd8}
+  .chip.mod{background:#3dff8a}
+  .chip.vip{background:#ff8af0}
+  .chip.sub{background:#2ff3ff}
+  .chip.first{background:#ffe14d}
+  .chip.bits{background:#c48bff}
+  .msg.first{border-style:dashed !important}
+  .evline{font-weight:800;color:var(--accent);margin-bottom:calc(2px*var(--scale))}
+  .msg.event{outline:calc(2px*var(--scale)) dashed var(--accent);outline-offset:calc(3px*var(--scale))}
+  .msg.hl{outline:calc(2px*var(--scale)) solid var(--accent);outline-offset:calc(3px*var(--scale));
+    filter:drop-shadow(0 0 calc(8px*var(--scale)) color-mix(in srgb,var(--accent) 60%,transparent))}
+
+  /* =============== animations =============== */
+  body{--slide:-60px;--slidey:0px}
+  body.a-right{--slide:60px}
+  body.a-center{--slide:0px;--slidey:24px}
+  body.anim-pop .msg{animation:pop .45s cubic-bezier(.2,1.6,.4,1) both}
+  body.anim-slide .msg{animation:slide .35s cubic-bezier(.2,.9,.3,1.1) both}
+  body.anim-fade .msg{animation:fade .5s ease both}
+  @keyframes pop{0%{opacity:0;transform:translateY(30px) scale(.6)}100%{opacity:1;transform:none}}
+  @keyframes slide{0%{opacity:0;transform:translate(var(--slide),var(--slidey))}100%{opacity:1;transform:none}}
+  @keyframes fade{0%{opacity:0}100%{opacity:1}}
+  body .msg.out{animation:out .45s ease-in forwards}
+  @keyframes out{to{opacity:0;transform:scale(.92)}}
+  body.tilt .msg:nth-child(odd){rotate:-.6deg}
+  body.tilt .msg:nth-child(even){rotate:.6deg}
+
+  /* =============== theme: WizHardz Neon =============== */
+  body.theme-neon{--accent:#2ff3ff;--card-rgb:18,8,34}
+  .theme-neon #chat{font-family:Rubik,sans-serif;color:#f4ecff}
+  .theme-neon .msg{
+    background:rgba(var(--card-rgb),var(--bga));
+    border:calc(3px*var(--scale)) solid var(--ucol);
+    border-radius:calc(14px*var(--scale)) calc(14px*var(--scale)) calc(14px*var(--scale)) calc(4px*var(--scale));
+    box-shadow:calc(5px*var(--scale)) calc(5px*var(--scale)) 0 #b14dff,
+               0 0 calc(14px*var(--scale)) color-mix(in srgb,var(--ucol) 45%,transparent);
+    padding:calc(8px*var(--scale)) calc(12px*var(--scale)) calc(10px*var(--scale));
+  }
+  body.theme-neon.a-right .msg{
+    border-radius:calc(14px*var(--scale)) calc(14px*var(--scale)) calc(4px*var(--scale)) calc(14px*var(--scale));
+    box-shadow:calc(-5px*var(--scale)) calc(5px*var(--scale)) 0 #b14dff,
+               0 0 calc(14px*var(--scale)) color-mix(in srgb,var(--ucol) 45%,transparent);
+  }
+  body.theme-neon.a-center .msg{border-radius:calc(14px*var(--scale))}
+  .theme-neon .head{margin-bottom:calc(3px*var(--scale))}
+  .theme-neon .name{font-family:Bungee,sans-serif;font-size:calc(17px*var(--scale));
+    text-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000;letter-spacing:.5px}
+  .theme-neon .text{font-weight:500}
+  .theme-neon .chip{font-family:Bungee,sans-serif;font-weight:400;box-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000}
+  .theme-neon .badge{filter:drop-shadow(calc(1.5px*var(--scale)) calc(1.5px*var(--scale)) 0 #000)}
+  .theme-neon .evline{font-family:Bungee,sans-serif;font-weight:400;font-size:calc(14px*var(--scale));text-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000}
+
+  /* =============== theme: Clean (basic) =============== */
+  body.theme-clean{--accent:#8b7bff;--card-rgb:18,18,24}
+  .theme-clean #chat{font-family:Inter,system-ui,sans-serif;color:#f1f1f5}
+  .theme-clean .msg{
+    background:rgba(var(--card-rgb),var(--bga));
+    border-radius:calc(10px*var(--scale));
+    border-left:calc(4px*var(--scale)) solid var(--ucol);
+    padding:calc(7px*var(--scale)) calc(12px*var(--scale)) calc(8px*var(--scale));
+    box-shadow:0 calc(2px*var(--scale)) calc(10px*var(--scale)) rgba(0,0,0,.25);
+  }
+  body.theme-clean.a-right .msg{border-left:0;border-right:calc(4px*var(--scale)) solid var(--ucol)}
+  body.theme-clean.a-center .msg{border-left:0;border-top:calc(3px*var(--scale)) solid var(--ucol)}
+  .theme-clean .head{margin-bottom:calc(2px*var(--scale))}
+  .theme-clean .name{font-weight:700;font-size:calc(15px*var(--scale))}
+  .theme-clean .text{font-weight:500}
+
+  /* =============== theme: Minimal (no boxes) =============== */
+  body.theme-minimal{--accent:#ffffff;--card-rgb:0,0,0;--gap:4px}
+  .theme-minimal #chat{font-family:Inter,system-ui,sans-serif;color:#fff}
+  .theme-minimal .msg{
+    background:rgba(var(--card-rgb),var(--bga));
+    padding:calc(3px*var(--scale)) calc(8px*var(--scale));
+    border-radius:calc(6px*var(--scale));font-weight:600;
+    text-shadow:0 0 calc(3px*var(--scale)) #000,0 calc(1px*var(--scale)) calc(2px*var(--scale)) #000,0 0 1px #000;
+  }
+  .theme-minimal .head{display:inline-flex;margin-right:calc(6px*var(--scale));vertical-align:baseline}
+  .theme-minimal .name{font-weight:800}
+  .theme-minimal .msg:not(.action) .name::after{content:":";color:#fff}
+  .theme-minimal .text{display:inline}
+  .theme-minimal .evline{display:block}
+  .theme-minimal .mention{text-shadow:none}
+
+  /* =============== theme: Bubbles =============== */
+  body.theme-bubbles{--accent:#7c5cff;--card-rgb:255,255,255}
+  .theme-bubbles #chat{font-family:Nunito,system-ui,sans-serif;color:#1d1b2e}
+  .theme-bubbles .msg{
+    background:rgba(var(--card-rgb),var(--bga));
+    border-radius:calc(20px*var(--scale)) calc(20px*var(--scale)) calc(20px*var(--scale)) calc(6px*var(--scale));
+    padding:calc(8px*var(--scale)) calc(14px*var(--scale)) calc(10px*var(--scale));
+    box-shadow:0 calc(4px*var(--scale)) 0 rgba(0,0,0,.18);
+  }
+  body.theme-bubbles.a-right .msg{border-radius:calc(20px*var(--scale)) calc(20px*var(--scale)) calc(6px*var(--scale)) calc(20px*var(--scale))}
+  body.theme-bubbles.a-center .msg{border-radius:calc(20px*var(--scale))}
+  .theme-bubbles .head{margin-bottom:calc(4px*var(--scale))}
+  .theme-bubbles .name{background:var(--ucol);color:#14121f;font-weight:800;font-size:calc(13px*var(--scale));
+    padding:calc(1px*var(--scale)) calc(9px*var(--scale));border-radius:99px}
+  .theme-bubbles .text{font-weight:700}
+  .theme-bubbles .msg.action .text{color:inherit}
+  .theme-bubbles .mention{color:#fff}
+
+  /* =============== theme: Retro Terminal =============== */
+  body.theme-terminal{--accent:#39ff88;--card-rgb:4,12,7}
+  .theme-terminal #chat{font-family:VT323,ui-monospace,monospace;color:#b9ffd3}
+  .theme-terminal .msg{
+    font-size:calc(24px*var(--scale));line-height:1.1;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 2px,transparent 2px 4px),rgba(var(--card-rgb),var(--bga));
+    border:calc(2px*var(--scale)) solid var(--accent);border-radius:3px;
+    padding:calc(6px*var(--scale)) calc(12px*var(--scale));
+    text-shadow:0 0 6px rgba(57,255,136,.55);
+    box-shadow:0 0 calc(12px*var(--scale)) color-mix(in srgb,var(--accent) 30%,transparent);
+  }
+  .theme-terminal .name::before{content:"> ";color:var(--accent)}
+  .theme-terminal .chip{font-family:VT323,monospace;font-weight:400;font-size:calc(16px*var(--scale))}
+
+  /* =============== theme: 8-Bit Arcade =============== */
+  body.theme-8bit{--accent:#f8b800;--card-rgb:16,16,58;--gap:18px;--frame:#fcfcfc}
+  .theme-8bit #chat{font-family:"Press Start 2P",monospace;color:#fcfcfc;padding:calc(20px*var(--scale))}
+  .theme-8bit .msg{
+    --px:calc(4px*var(--scale));
+    font-size:calc(12px*var(--scale));line-height:1.75;
+    background:rgba(var(--card-rgb),var(--bga));
+    padding:calc(var(--px)*3) calc(var(--px)*4);
+    margin:var(--px);
+    /* notched pixel frame: frame colour on top, black outline behind */
+    box-shadow:
+      0 calc(var(--px)*-1) 0 0 var(--frame), 0 var(--px) 0 0 var(--frame),
+      calc(var(--px)*-1) 0 0 0 var(--frame), var(--px) 0 0 0 var(--frame),
+      0 calc(var(--px)*-2) 0 0 #000, 0 calc(var(--px)*2) 0 0 #000,
+      calc(var(--px)*-2) 0 0 0 #000, calc(var(--px)*2) 0 0 0 #000,
+      calc(var(--px)*2) calc(var(--px)*3) 0 0 rgba(0,0,0,.45);
+    image-rendering:pixelated;
+  }
+  .theme-8bit .msg.event,.theme-8bit .msg.hl{--frame:var(--accent);outline:none;filter:none}
+  .theme-8bit .msg.first{border:0 !important;--frame:#00e8d8}
+  .theme-8bit .head{margin-bottom:calc(6px*var(--scale))}
+  .theme-8bit .name{text-transform:uppercase;text-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000}
+  .theme-8bit .text{text-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000}
+  .theme-8bit .chip{font:calc(8px*var(--scale)) "Press Start 2P",monospace;border-radius:0;padding:calc(3px*var(--scale)) calc(4px*var(--scale));
+    box-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000}
+  .theme-8bit .badge{image-rendering:pixelated}
+  .theme-8bit .mention{border-radius:0;color:#000;text-shadow:none}
+  .theme-8bit .evline{font-weight:400;text-shadow:calc(2px*var(--scale)) calc(2px*var(--scale)) 0 #000;margin-bottom:calc(6px*var(--scale))}
+  .theme-8bit .emote{height:calc(26px*var(--scale))}
+  .theme-8bit .emote-only .emote{height:calc(44px*var(--scale))}
+  .theme-8bit .msg:last-child .text::after{content:" \25BC";color:var(--accent);animation:blink8 .8s steps(1) infinite}
+  @keyframes blink8{50%{opacity:0}}
+  body.theme-8bit.anim-pop .msg{animation:pop8 .4s steps(4) both}
+  body.theme-8bit.anim-slide .msg{animation-timing-function:steps(6)}
+  body.theme-8bit.anim-fade .msg{animation-timing-function:steps(4)}
+  body.theme-8bit .msg.out{animation:out .4s steps(4) forwards}
+  @keyframes pop8{0%{opacity:0;transform:translateY(16px) scale(.5)}100%{opacity:1;transform:none}}
+
+  /* =============== status + gear =============== */
+  #status{
+    position:absolute;top:10px;left:10px;max-width:calc(100% - 80px);
+    font:700 13px Rubik,sans-serif;color:#fff;
+    background:rgba(0,0,0,.75);padding:6px 10px;border-radius:8px;
+    transition:opacity .6s;z-index:5;
+  }
+  #status.hide{opacity:0}
+  #gear{
+    position:absolute;top:10px;right:10px;z-index:10;
+    width:44px;height:44px;border-radius:12px;border:3px solid #2ff3ff;
+    background:#1a0b30;color:#2ff3ff;font-size:24px;cursor:pointer;
+    box-shadow:4px 4px 0 #b14dff;opacity:0;transition:opacity .2s;
+  }
+  body:hover #gear{opacity:1}
+
+  /* =============== settings panel =============== */
+  #panel{
+    position:absolute;z-index:20;display:none;flex-direction:column;
+    width:min(510px,calc(100% - 16px));max-height:min(560px,calc(100% - 16px));
+    background:rgba(20,8,38,.97);border:3px solid #2ff3ff;border-radius:14px;
+    box-shadow:5px 5px 0 #b14dff;font:14px Rubik,sans-serif;color:#f4ecff;
+    box-sizing:border-box;
+  }
+  #panel.open{display:flex}
+  #panel.c-t{top:8px} #panel.c-b{bottom:8px}
+  #panel.c-l{left:8px} #panel.c-r{right:8px}
+  .phead{cursor:move;user-select:none}
+  #panel.mini .pbody,#panel.mini .pfoot{display:none}
+  .phead{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:2px solid #3a2361;flex:none}
+  .phead h1{flex:1;margin:0;font:18px Bungee,sans-serif;color:#2ff3ff;text-shadow:2px 2px 0 #b14dff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ibtn{width:32px;height:32px;flex:none;border-radius:8px;border:2px solid #4b2d7d;background:#0c0418;color:#fff;cursor:pointer;font-size:15px;padding:0}
+  .ibtn:hover{border-color:#2ff3ff}
+  .pbody{overflow:auto;padding:10px 12px 14px;flex:1}
+  .hint{color:#c9b6ea;font-size:12.5px;margin:0 0 10px}
+  #panel fieldset{border:2px solid #3a2361;border-radius:12px;margin:0 0 10px;padding:6px 12px 8px}
+  #panel legend{font:13px Bungee,sans-serif;color:#ff4fd8;padding:0 6px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 0}
+  .row > label:not(.switch){flex:1}
+  .row > label:not(.switch){cursor:pointer}
+  .msg[hidden]{display:none !important}
+  .row small{display:block;color:#a993cf;font-size:12px;font-weight:500}
+  #panel input[type=text],#panel input[type=number],#panel select{
+    font:600 14px Rubik,sans-serif;color:#f4ecff;background:#0c0418;
+    border:2px solid #4b2d7d;border-radius:8px;padding:6px 8px;
+  }
+  #panel select{max-width:55%}
+  #panel input[type=text].wide{width:100%;box-sizing:border-box;margin-top:4px}
+  #panel input[type=number]{width:72px}
+  #panel input[type=range]{width:130px;accent-color:#b14dff}
+  #panel input:focus,#panel select:focus{outline:none;border-color:#2ff3ff}
+  .val{display:inline-block;min-width:40px;text-align:right;font-size:13px;color:#2ff3ff}
+  .switch{position:relative;width:46px;height:26px;flex:none}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch span{position:absolute;inset:0;background:#2b1a48;border-radius:20px;cursor:pointer;transition:.2s;border:2px solid #4b2d7d}
+  .switch span::after{content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;background:#8a76ad;border-radius:50%;transition:.2s}
+  .switch input:checked + span{background:#b14dff;border-color:#2ff3ff}
+  .switch input:checked + span::after{transform:translateX(20px);background:#fff}
+  .swatches{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .sw{width:24px;height:24px;border-radius:50%;border:2px solid #000;cursor:pointer;box-shadow:0 0 0 2px #4b2d7d;padding:0}
+  .sw.def{background:conic-gradient(#2ff3ff,#b14dff,#ff4fd8,#ffe14d,#2ff3ff)}
+  .sw.sel{box-shadow:0 0 0 3px #fff}
+  #s_accent{width:86px}
+  .pfoot{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;border-top:2px solid #3a2361;flex:none}
+  .btn{
+    font:12px Bungee,sans-serif;cursor:pointer;border:2px solid #000;border-radius:9px;
+    padding:6px 9px;box-shadow:2px 2px 0 #000;color:#120822;background:#2ff3ff;
+  }
+  .btn.alt{background:#c9b6ea}
+  .btn.warn{background:#ff8a8a}
+  .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+  .mode{margin:6px 0 2px;font-size:13px;font-weight:700;color:#3dff8a}
+  .mode[data-state=none],.mode[data-state=bad]{color:#ff8a8a}
+  .mode[data-state=connecting],.mode[data-state=retrying]{color:#ffe14d}
+  .note{color:#ffe14d;font-size:12.5px;margin:4px 0 0}
+  #linkbox{width:100%;box-sizing:border-box;font:12px monospace;color:#c9b6ea;background:#0c0418;border:2px solid #4b2d7d;border-radius:8px;padding:6px;resize:none;height:56px}
+  .linkrow{display:flex;gap:8px;align-items:stretch;margin-top:6px}
+  .linkrow textarea{flex:1;min-width:0}
+  .linkrow .btn{flex:none}
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<div id="fx"></div>
+<div id="status">starting…</div>
+<button id="gear" title="Settings">⚙</button>
+
+<div id="panel" class="c-t c-r">
+  <div class="phead">
+    <h1>Overlay Settings</h1>
+    <button class="ibtn" id="swap" title="Move to the next corner (or drag the title bar)">⤢</button>
+    <button class="ibtn" id="mini" title="Shrink / expand">—</button>
+    <button class="ibtn" id="x" title="Close without saving">✕</button>
+  </div>
+
+  <div class="pbody">
+    <p class="hint">Changes show live on the chat. Press <b>Save</b> to keep them, or ✕ to undo. Drag the title bar or press ⤢ to move this panel out of the way.</p>
+
+    <fieldset>
+      <legend>Channel</legend>
+      <div class="row"><label>Twitch channel to read
+        <input type="text" class="wide" id="s_channel" placeholder="yourchannelname" autocomplete="off" spellcheck="false"></label></div>
+      <p class="hint" style="margin:0">Type your channel and press Enter.</p>
+      <div class="row"><label>Demo mode<small>Adds fake chatters for testing — leave off when streaming</small></label>
+        <label class="switch"><input type="checkbox" id="s_demo"><span></span></label></div>
+      <p class="mode" id="modeNote"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Theme</legend>
+      <div class="row"><label>Theme</label>
+        <select id="s_theme">
+          <option value="neon">WizHardz Neon</option>
+          <option value="clean">Clean (basic)</option>
+          <option value="minimal">Minimal (no boxes)</option>
+          <option value="bubbles">Bubbles</option>
+          <option value="terminal">Retro Terminal</option>
+          <option value="8bit">8-Bit Arcade</option>
+        </select></div>
+      <div class="row"><label>Accent colour<small>Used for alerts, highlights and names when name colours are off</small>
+        <div class="swatches" id="swatches"></div></label></div>
+      <div class="row"><label>Custom accent (hex)</label><input type="text" id="s_accent" placeholder="auto" autocomplete="off" spellcheck="false"></div>
+      <div class="row"><label>Use chatters' name colours</label>
+        <label class="switch"><input type="checkbox" id="s_namecolors"><span></span></label></div>
+      <div class="row"><label>Background opacity</label><input type="range" id="s_bga" min="0" max="100" step="1"><span class="val" id="v_bga"></span></div>
+      <div class="row"><label>Size</label><input type="range" id="s_scale" min="60" max="200" step="5"><span class="val" id="v_scale"></span></div>
+      <div class="row"><label>Entry animation</label>
+        <select id="s_anim"><option value="pop">Pop</option><option value="slide">Slide in</option><option value="fade">Fade</option><option value="none">None</option></select></div>
+      <div class="row"><label>Wonky tilt on cards</label>
+        <label class="switch"><input type="checkbox" id="s_tilt"><span></span></label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Alignment</legend>
+      <div class="row"><label>Horizontal position</label>
+        <select id="s_align"><option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option></select></div>
+      <div class="row"><label>Stack messages from</label>
+        <select id="s_valign"><option value="bottom">Bottom</option><option value="top">Top</option></select></div>
+      <div class="row"><label>New messages appear</label>
+        <select id="s_order"><option value="newlast">Below older ones</option><option value="newfirst">Above older ones</option></select></div>
+      <div class="row"><label>Message width</label>
+        <select id="s_width"><option value="fit">Fit to message</option><option value="full">Full width</option></select></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Badges</legend>
+      <div class="row"><label>Badges<small>Real = your actual Twitch badges (sub months, mod, VIP…)</small></label>
+        <select id="s_badges"><option value="real">Real Twitch badges</option><option value="tags">Text tags</option><option value="off">Off</option></select></div>
+      <div class="row"><label>"NEW" tag for first-time chatters</label>
+        <label class="switch"><input type="checkbox" id="s_first"><span></span></label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Emotes</legend>
+      <div class="row"><label>7TV emotes</label><label class="switch"><input type="checkbox" id="s_7tv"><span></span></label></div>
+      <div class="row"><label>BetterTTV emotes</label><label class="switch"><input type="checkbox" id="s_bttv"><span></span></label></div>
+      <div class="row"><label>FrankerFaceZ emotes</label><label class="switch"><input type="checkbox" id="s_ffz"><span></span></label></div>
+      <div class="row"><label>Emote size</label><input type="range" id="s_emotesize" min="60" max="250" step="5"><span class="val" id="v_emotesize"></span></div>
+      <div class="row"><label>Collapse emote spam<small>"catJAM catJAM catJAM" shows as one catJAM ×3</small></label><label class="switch"><input type="checkbox" id="s_collapse"><span></span></label></div>
+      <div class="row"><label>Emote combos<small>When several chatters send the same emote, it bursts big on screen</small></label><label class="switch"><input type="checkbox" id="s_combo"><span></span></label></div>
+      <div class="row"><label>Chatters needed for a combo</label><input type="number" id="s_combomin" min="2" max="20"></div>
+      <div class="btns"><button type="button" class="btn alt" id="testCombo">Test combo</button></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Highlight Chatters</legend>
+      <div class="row"><label>Highlighted users (comma separated)<small>Regulars, friends or mods get a special frame and a ★</small>
+        <input type="text" class="wide" id="s_regulars" placeholder="name1, name2" autocomplete="off" spellcheck="false"></label></div>
+      <div class="row"><label>Also highlight mods &amp; VIPs</label><label class="switch"><input type="checkbox" id="s_regmods"><span></span></label></div>
+      <div class="row"><label>Highlight colour (hex)</label><input type="text" id="s_regcolor" placeholder="#ffd84d" autocomplete="off" spellcheck="false" style="width:86px"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sounds</legend>
+      <div class="row"><label>Message sound</label>
+        <select id="s_sound"><option value="off">Off</option><option value="blip">Blip</option><option value="pop">Pop</option><option value="bubble">Bubble</option><option value="chime">Chime</option><option value="coin">8-bit coin</option><option value="custom">Custom (link below)</option></select></div>
+      <div class="row"><label>Alert &amp; combo sound</label>
+        <select id="s_alertsound"><option value="off">Off</option><option value="fanfare">8-bit fanfare</option><option value="powerup">Power-up</option><option value="sparkle">Sparkle</option><option value="chime">Chime</option><option value="coin">8-bit coin</option><option value="custom">Custom (link below)</option></select></div>
+      <div class="row"><label>Volume</label><input type="range" id="s_volume" min="0" max="100" step="5"><span class="val" id="v_volume"></span></div>
+      <div class="row"><label>Custom message sound link
+        <input type="text" class="wide" id="s_soundurl" placeholder="https://…/sound.mp3" autocomplete="off" spellcheck="false"></label></div>
+      <div class="row"><label>Custom alert sound link
+        <input type="text" class="wide" id="s_alertsoundurl" placeholder="https://…/sound.mp3" autocomplete="off" spellcheck="false"></label></div>
+      <p class="hint" style="margin:6px 0 0">In OBS, tick "Control audio via OBS" on this source so the sounds get their own slider in the audio mixer.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Alerts &amp; Filtering</legend>
+      <div class="row"><label>Show subs, gifts, raids &amp; announcements</label>
+        <label class="switch"><input type="checkbox" id="s_events"><span></span></label></div>
+      <div class="row"><label>Highlight messages that mention you</label>
+        <label class="switch"><input type="checkbox" id="s_mentions"><span></span></label></div>
+      <div class="row"><label>Hide links<small>Shows [link] instead of the address</small></label>
+        <label class="switch"><input type="checkbox" id="s_links"><span></span></label></div>
+      <div class="row"><label>Hide !commands<small>Keeps game commands like !join off the overlay</small></label>
+        <label class="switch"><input type="checkbox" id="s_hidecmds"><span></span></label></div>
+      <div class="row"><label>Hidden users (comma separated)
+        <input type="text" class="wide" id="s_hide" autocomplete="off" spellcheck="false"></label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Timing</legend>
+      <div class="row"><label>Messages disappear after (seconds)<small>0 = stay until pushed off</small></label>
+        <input type="number" id="s_fade" min="0" max="600"></div>
+      <div class="row"><label>Max messages on screen</label><input type="number" id="s_max" min="1" max="50"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Link with these settings</legend>
+      <small style="color:#a993cf">Optional: paste into another Browser Source's URL box to copy this setup.</small>
+      <div class="linkrow"><textarea id="linkbox" readonly></textarea><button type="button" class="btn" id="copyLink">Copy</button></div>
+    </fieldset>
+    <p class="note" id="urlNote"></p>
+  </div>
+
+  <div class="pfoot">
+    <button class="btn" id="save">Save</button>
+    <button class="btn alt" id="test">Test message</button>
+    <button class="btn alt" id="cancel">Cancel</button>
+    <button class="btn warn" id="reset">Reset</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ================= settings =================
+  const DEFAULTS = {
+    channel: '', demo: false,
+    theme: 'neon', accent: '', namecolors: true, bga: 86, scale: 100, anim: 'pop', tilt: true,
+    align: 'left', valign: 'bottom', order: 'newlast', width: 'fit',
+    badges: 'real', first: true, '7tv': true, bttv: true, ffz: true,
+    events: true, mentions: true, links: true, hidecmds: false,
+    hide: 'nightbot,streamelements,streamlabs,moobot,fossabot',
+    fade: 30, max: 12,
+    emotesize: 100, collapse: true, combo: true, combomin: 3,
+    regulars: '', regmods: false, regcolor: '#ffd84d',
+    sound: 'off', alertsound: 'off', volume: 50, soundurl: '', alertsoundurl: ''
+  };
+  const THEMES = {
+    neon:     { bga: 86, tilt: true },
+    clean:    { bga: 82, tilt: false },
+    minimal:  { bga: 0,  tilt: false },
+    bubbles:  { bga: 95, tilt: false },
+    terminal: { bga: 88, tilt: false },
+    '8bit':   { bga: 94, tilt: false }
+  };
+  const KEY = 'wizhardz-chat-overlay';
+  const store = {
+    get() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; } },
+    set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch { return false; } },
+    clear() { try { localStorage.removeItem(KEY); } catch {} }
+  };
+  // settings saved by the older version used "side" and a 1.0-style scale
+  function migrate(o) {
+    if (o.side && !o.align) o.align = o.side;
+    delete o.side;
+    if (o.scale !== undefined && Number(o.scale) > 0 && Number(o.scale) <= 3) o.scale = Math.round(Number(o.scale) * 100);
+    return o;
+  }
+  const norm = c => String(c || '').toLowerCase().trim()
+    .replace(/^https?:\/\/(www\.)?twitch\.tv\//, '').replace(/^[#@]/, '').split(/[/?\s]/)[0];
+
+  const params = new URLSearchParams(location.search);
+  const urlOverrides = {};
+  for (const [k, v] of params) {
+    if (k === 'side') { urlOverrides.side = v; continue; }
+    if (!(k in DEFAULTS)) continue;
+    urlOverrides[k] = typeof DEFAULTS[k] === 'boolean' ? (v === '1' || v === 'true') :
+                      typeof DEFAULTS[k] === 'number' ? Number(v) : v;
+  }
+  migrate(urlOverrides);
+
+  let saved = { ...DEFAULTS, ...migrate(store.get()) };
+  const computeS = () => {
+    const s = { ...saved, ...urlOverrides };
+    s.channel = norm(s.channel);
+    if (!THEMES[s.theme]) s.theme = 'neon';
+    return s;
+  };
+  let S = computeS();
+
+  const $ = id => document.getElementById(id);
+  const chatEl = $('chat'), statusEl = $('status'), panel = $('panel');
+  let hideUsers = new Set(), regSet = new Set();
+
+  function applyLook() {
+    const b = document.body;
+    b.className = [
+      'theme-' + S.theme, 'a-' + S.align, 'v-' + S.valign, 'o-' + S.order, 'w-' + S.width, 'anim-' + S.anim,
+      S.tilt ? 'tilt' : '', S.namecolors ? 'usercols' : ''
+    ].join(' ');
+    b.style.setProperty('--scale', Math.max(0.4, (Number(S.scale) || 100) / 100));
+    b.style.setProperty('--bga', Math.min(1, Math.max(0, (Number(S.bga) || 0) / 100)));
+    if (/^#[0-9a-f]{6}$/i.test(S.accent)) b.style.setProperty('--accent', S.accent);
+    else b.style.removeProperty('--accent');
+    hideUsers = new Set(String(S.hide).toLowerCase().split(',').map(s => s.trim()).filter(Boolean));
+    regSet = new Set(String(S.regulars).toLowerCase().split(',').map(s => s.trim().replace(/^@/, '')).filter(Boolean));
+    b.style.setProperty('--escale', Math.max(0.3, (Number(S.emotesize) || 100) / 100));
+    b.style.setProperty('--reg', /^#[0-9a-f]{6}$/i.test(S.regcolor) ? S.regcolor : '#ffd84d');
+    trim();
+  }
+
+  // ================= status =================
+  const setStatus = (t, hideAfter) => {
+    statusEl.textContent = t; statusEl.classList.remove('hide');
+    clearTimeout(setStatus.t);
+    if (hideAfter) setStatus.t = setTimeout(() => statusEl.classList.add('hide'), hideAfter);
+  };
+
+  // ================= colours / text =================
+  const FALLBACK = ['#2ff3ff', '#b14dff', '#ff4fd8', '#3dff8a', '#ffe14d', '#ff8a3d', '#8ab4ff'];
+  const colorFor = (name, given) => {
+    if (given) return brighten(given);
+    let h = 0; for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return FALLBACK[h % FALLBACK.length];
+  };
+  function brighten(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex); if (!m) return '#2ff3ff';
+    let n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (lum < 110) { const k = 110 / Math.max(lum, 1); const mix = c => Math.min(255, Math.round(c * k + 60)); r = mix(r); g = mix(g); b = mix(b); }
+    return `rgb(${r},${g},${b})`;
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ================= badges (real images via ivr.fi, no login) =================
+  const badgeMap = {};
+  let badgesLoading = null;
+  function addBadges(list) {
+    if (!Array.isArray(list)) return;
+    for (const set of list) {
+      const id = set.set_id || set.setID || set.id; if (!id) continue;
+      badgeMap[id] = badgeMap[id] || {};
+      for (const v of set.versions || []) {
+        const url = v.image_url_2x || v.image_url_4x || v.image_url_1x;
+        if (url) badgeMap[id][v.id] = { url, title: v.title || id };
+      }
+    }
+  }
+  const getJSON = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
+  function loadBadges() {
+    if (badgesLoading) return badgesLoading;
+    badgesLoading = (async () => {
+      addBadges(await getJSON('https://api.ivr.fi/v2/twitch/badges/global'));
+      const chan = S.channel;
+      if (chan) addBadges(await getJSON('https://api.ivr.fi/v2/twitch/badges/channel?login=' + encodeURIComponent(chan)));
+    })();
+    return badgesLoading;
+  }
+
+  // ================= 7TV / BTTV / FFZ emotes =================
+  let extEmotes = new Map(), roomId = null, emoteGen = 0;
+  async function loadExtEmotes() {
+    const gen = ++emoteGen;
+    const fix = u => u && (u.startsWith('//') ? 'https:' + u : u);
+    const ffz = new Map(), bttv = new Map(), seven = new Map();
+    const jobs = [];
+
+    if (S.ffz) jobs.push((async () => {
+      const add = j => { for (const set of Object.values(j?.sets || {})) for (const e of set.emoticons || []) {
+        const urls = e.animated || e.urls; const url = fix(urls?.['2'] || urls?.['1']); if (url) ffz.set(e.name, url); } };
+      add(await getJSON('https://api.frankerfacez.com/v1/set/global'));
+      if (roomId) add(await getJSON('https://api.frankerfacez.com/v1/room/id/' + roomId));
+    })());
+    if (S.bttv) jobs.push((async () => {
+      const add = list => { for (const e of list || []) bttv.set(e.code, `https://cdn.betterttv.net/emote/${e.id}/2x`); };
+      add(await getJSON('https://api.betterttv.net/3/cached/emotes/global'));
+      if (roomId) { const j = await getJSON('https://api.betterttv.net/3/cached/users/twitch/' + roomId); add(j?.channelEmotes); add(j?.sharedEmotes); }
+    })());
+    if (S['7tv']) jobs.push((async () => {
+      const add = list => { for (const e of list || []) { const host = e.data?.host; if (!host?.url) continue;
+        const file = (host.files || []).find(f => f.name === '2x.webp') || (host.files || [])[0];
+        seven.set(e.name, fix(host.url) + '/' + (file ? file.name : '2x.webp')); } };
+      add((await getJSON('https://7tv.io/v3/emote-sets/global'))?.emotes);
+      if (roomId) add((await getJSON('https://7tv.io/v3/users/twitch/' + roomId))?.emote_set?.emotes);
+    })());
+
+    await Promise.all(jobs);
+    if (gen === emoteGen) extEmotes = new Map([...ffz, ...bttv, ...seven]); // 7TV wins name clashes
+  }
+
+  // ================= message rendering =================
+  const LINK = /^(https?:\/\/\S+|www\.\S+|[\w-]+(\.[\w-]+)*\.(com|net|org|tv|gg|io|co|uk|ly|me|app|dev|xyz|be|link)(\/\S*)?)$/i;
+  // Text is split into parts (text / space / emote) so repeated emotes can be collapsed and counted
+  function wordParts(str, parts) {
+    for (const tok of str.split(/(\s+)/)) {
+      if (!tok) continue;
+      if (/^\s+$/.test(tok)) { parts.push({ t: 'ws', h: tok }); continue; }
+      const ext = extEmotes.get(tok);
+      if (ext) { parts.push({ t: 'em', k: ext, n: tok, h: `<img class="emote" alt="${esc(tok)}" src="${esc(ext)}">` }); continue; }
+      if (S.links && LINK.test(tok)) { parts.push({ t: 'tx', h: '<span class="link">[link]</span>' }); continue; }
+      if (/^@[A-Za-z0-9_]{2,25}[,.!?]?$/.test(tok)) { parts.push({ t: 'tx', h: `<span class="mention">${esc(tok)}</span>` }); continue; }
+      parts.push({ t: 'tx', h: esc(tok) });
+    }
+  }
+  function renderText(text, emotesTag) {
+    const chars = Array.from(text || ''), ranges = [], parts = [];
+    if (emotesTag) {
+      for (const part of emotesTag.split('/')) {
+        const [id, pos] = part.split(':'); if (!pos) continue;
+        for (const r of pos.split(',')) { const [a, b] = r.split('-').map(Number); ranges.push({ a, b, id }); }
+      }
+      ranges.sort((x, y) => x.a - y.a);
+    }
+    let i = 0;
+    for (const r of ranges) {
+      if (r.a < i) continue;
+      wordParts(chars.slice(i, r.a).join(''), parts);
+      const name = chars.slice(r.a, r.b + 1).join('');
+      const url = `https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(r.id)}/default/dark/2.0`;
+      parts.push({ t: 'em', k: url, n: name, h: `<img class="emote" alt="${esc(name)}" src="${url}">` });
+      i = r.b + 1;
+    }
+    wordParts(chars.slice(i).join(''), parts);
+
+    let list = parts;
+    if (S.collapse) {
+      list = [];
+      for (const p of parts) {
+        if (p.t === 'em') {
+          let j = list.length - 1;
+          while (j >= 0 && list[j].t === 'ws') j--;
+          if (j >= 0 && list[j].t === 'em' && list[j].k === p.k) { list[j].c = (list[j].c || 1) + 1; list.length = j + 1; continue; }
+          list.push({ ...p });
+        } else list.push(p);
+      }
+    }
+    const html = list.map(p => p.t === 'em' && p.c > 1 ? p.h + `<span class="ecount">×${p.c}</span>` : p.h).join('');
+    const emoteOnly = list.some(p => p.t === 'em') && list.every(p => p.t !== 'tx');
+    const emotes = [...new Map(parts.filter(p => p.t === 'em').map(p => [p.k, { k: p.k, n: p.n }])).values()];
+    return { html, emoteOnly, emotes };
+  }
+  function badgeHtml(badges, first) {
+    let h = '';
+    if (first && S.first) h += '<span class="chip first">NEW</span>';
+    if (S.badges === 'off' || !badges) return h;
+    if (S.badges === 'real') {
+      for (const pair of badges.split(',')) {
+        const [set, ver] = pair.split('/');
+        const b = badgeMap[set]?.[ver];
+        if (b) h += `<img class="badge" alt="${esc(b.title)}" src="${esc(b.url)}">`;
+      }
+      return h;
+    }
+    if (badges.includes('broadcaster/')) h += '<span class="chip host">HOST</span>';
+    if (badges.includes('moderator/')) h += '<span class="chip mod">MOD</span>';
+    if (badges.includes('vip/')) h += '<span class="chip vip">VIP</span>';
+    if (badges.includes('subscriber/') || badges.includes('founder/')) h += '<span class="chip sub">SUB</span>';
+    return h;
+  }
+  const mentionsMe = text => !!S.channel && new RegExp('(^|[^\\w])@?' + S.channel + '([^\\w]|$)', 'i').test(text);
+
+  // Each card keeps its original chat data, so settings changes can redraw cards already on screen
+  const EV_ICON = { sub: '⭐', resub: '⭐', giftpaidupgrade: '⭐', primepaidupgrade: '⭐', subgift: '🎁', submysterygift: '🎁', raid: '🚀', announcement: '📣', bitsbadgetier: '💎' };
+  const loginOf = d => (d.login || d.name || '').toLowerCase();
+  function allowed(d) {
+    if (hideUsers.has(loginOf(d))) return false;
+    if (d.kind === 'event') return S.events;
+    if (S.hidecmds && d.text.trim().startsWith('!')) return false;
+    return true;
+  }
+  function build(el, d) {
+    const login = loginOf(d);
+    el.dataset.user = login;
+    if (d.id) el.dataset.id = d.id;
+    if (d.kind === 'event') {
+      el.className = 'msg event';
+      const line = d.type === 'announcement' ? `Announcement from ${d.name}` : (d.system || d.name);
+      let html = `<div class="evline">${EV_ICON[d.type] || '✨'} ${esc(line)}</div>`;
+      if (d.text) html += `<div class="text">${renderText(d.text, d.emotes).html}</div>`;
+      el.innerHTML = html;
+      return;
+    }
+    const body = renderText(d.text, d.emotes);
+    const cls = ['msg'];
+    if (d.action) cls.push('action');
+    if (d.first && S.first) cls.push('first');
+    if (d.highlight || (S.mentions && login !== S.channel && mentionsMe(d.text))) cls.push('hl');
+    if (regSet.has(login) || (S.regmods && /(^|,)(moderator|vip|broadcaster)\//.test(d.badges || ''))) cls.push('reg');
+    if (body.emoteOnly) cls.push('emote-only');
+    el.className = cls.join(' ');
+    el.style.setProperty('--user-col', colorFor(d.name, d.color));
+    let chips = badgeHtml(d.badges, d.first);
+    if (d.bits) chips += `<span class="chip bits">💎 ${esc(d.bits)}</span>`;
+    el.innerHTML = `<div class="head">${chips}<span class="name">${esc(d.name)}</span></div><div class="text">${body.html}</div>`;
+  }
+  function addCard(d) {
+    if (!allowed(d)) return;
+    const el = document.createElement('div');
+    el._d = d;
+    build(el, d);
+    push(el);
+    playSound(d.kind === 'event');
+    if (d.kind === 'msg' && S.combo) comboTrack(loginOf(d), renderText(d.text, d.emotes).emotes);
+  }
+
+  // ================= emote combos =================
+  const combos = new Map(); // emote url -> { users: Map(login -> time), el, timer }
+  const COMBO_WINDOW = 8000;
+  function comboTrack(login, emotes) {
+    const now = Date.now();
+    for (const e of emotes) {
+      let c = combos.get(e.k);
+      if (!c) { c = { users: new Map(), url: e.k, name: e.n }; combos.set(e.k, c); }
+      for (const [u, t] of c.users) if (now - t > COMBO_WINDOW) c.users.delete(u);
+      c.users.set(login, now);
+      if (c.users.size >= Math.max(2, Number(S.combomin) || 3)) showCombo(c);
+    }
+  }
+  function showCombo(c) {
+    const n = c.users.size;
+    if (!c.el || !c.el.isConnected || c.el.classList.contains('bye')) {
+      const el = document.createElement('div');
+      el.className = 'combo';
+      el.style.left = (30 + Math.random() * 40) + '%';
+      el.style.top = (30 + Math.random() * 25) + '%';
+      el.innerHTML = `<img alt="${esc(c.name)}" src="${esc(c.url)}"><div class="ccount"></div>`;
+      $('fx').appendChild(el);
+      c.el = el;
+      playSound(true);
+    } else {
+      c.el.classList.remove('bump'); void c.el.offsetWidth; c.el.classList.add('bump');
+    }
+    c.el.querySelector('.ccount').textContent = `×${n} COMBO`;
+    clearTimeout(c.timer);
+    const el = c.el;
+    c.timer = setTimeout(() => { el.classList.add('bye'); setTimeout(() => el.remove(), 600); }, 3500);
+  }
+
+  // ================= sounds (made in the browser, no files needed) =================
+  let actx = null, lastMsgSound = 0;
+  const NOTES = {
+    blip:    [[880, 0, .07, 'square']],
+    chime:   [[1046.5, 0, .4, 'sine'], [1568, .08, .5, 'sine']],
+    coin:    [[988, 0, .08, 'square'], [1319, .08, .4, 'square']],
+    fanfare: [[523, 0, .12, 'square'], [659, .12, .12, 'square'], [784, .24, .12, 'square'], [1047, .36, .55, 'square']],
+    powerup: [392, 494, 587, 784, 988, 1175, 1568].map((f, i) => [f, i * .055, .09, 'triangle']),
+    sparkle: [[1568, 0, .18, 'sine'], [2093, .07, .22, 'sine'], [2637, .14, .45, 'sine']]
+  };
+  const SWEEPS = { pop: [700, 160, .09, 'sine'], bubble: [300, 950, .12, 'sine'] };
+  function playSound(isAlert, force) {
+    const name = isAlert ? S.alertsound : S.sound;
+    if (!name || name === 'off') return;
+    const vol = Math.max(0, Math.min(1, (Number(S.volume) || 0) / 100));
+    if (!vol) return;
+    const now = performance.now();
+    if (!isAlert && !force && now - lastMsgSound < 120) return; // don't machine-gun during busy chat
+    if (!isAlert) lastMsgSound = now;
+    if (name === 'custom') {
+      const url = isAlert ? S.alertsoundurl : S.soundurl;
+      if (!url) return;
+      try { const a = new Audio(url); a.volume = vol; a.play().catch(() => {}); } catch {}
+      return;
+    }
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t0 = actx.currentTime + .01;
+      const tone = (f, f2, start, dur, type) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        const peak = vol * (type === 'square' ? .12 : type === 'triangle' ? .25 : .3);
+        o.type = type;
+        o.frequency.setValueAtTime(f, t0 + start);
+        if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + start + dur);
+        g.gain.setValueAtTime(0.0001, t0 + start);
+        g.gain.linearRampToValueAtTime(peak, t0 + start + .005);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
+        o.connect(g).connect(actx.destination);
+        o.start(t0 + start); o.stop(t0 + start + dur + .02);
+      };
+      if (SWEEPS[name]) { const [a, b, d, ty] = SWEEPS[name]; tone(a, b, 0, d, ty); }
+      else for (const [f, st, d, ty] of NOTES[name] || []) tone(f, 0, st, d, ty);
+    } catch {}
+  }
+  const addMessage = m => addCard({ ...m, kind: 'msg' });
+  const addEvent = e => addCard({ ...e, kind: 'event' });
+  function redrawAll() {
+    for (const el of [...chatEl.children]) {
+      if (!el._d || el.classList.contains('out')) continue;
+      el.hidden = !allowed(el._d); // hidden rather than deleted, so Cancel can bring them back
+      if (el.hidden) continue;
+      build(el, el._d);
+      el.querySelectorAll('img').forEach(i => i.addEventListener('load', trim, { once: true }));
+    }
+    trim();
+  }
+
+  function push(el) {
+    chatEl.appendChild(el);
+    el.querySelectorAll('img').forEach(i => i.addEventListener('load', trim, { once: true }));
+    trim();
+    if (S.fade > 0) setTimeout(() => removeEl(el), S.fade * 1000);
+  }
+  function removeEl(el) {
+    if (!el.isConnected || el.classList.contains('out')) return;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 450);
+  }
+  // keep within the max count, and drop the oldest if they no longer fit on screen
+  function overflowing() {
+    const h = chatEl.clientHeight;
+    for (const c of chatEl.children) if (c.offsetTop < 0 || c.offsetTop + c.offsetHeight > h) return true;
+    return false;
+  }
+  function trim() {
+    const max = Math.max(1, Number(S.max) || 12);
+    while (chatEl.children.length > max) chatEl.firstElementChild.remove();
+    let guard = 60;
+    while (chatEl.children.length > 1 && overflowing() && guard--) chatEl.firstElementChild.remove();
+  }
+
+  // ================= Twitch IRC (read-only, no login) =================
+  function parseTags(raw) {
+    const t = {};
+    for (const kv of raw.split(';')) {
+      const i = kv.indexOf('=');
+      t[kv.slice(0, i)] = kv.slice(i + 1).replace(/\\s/g, ' ').replace(/\\:/g, ';').replace(/\\\\/g, '\\');
+    }
+    return t;
+  }
+  let ws = null, retry = 1000, retryTimer = null, liveState = 'off';
+  const running = { channel: '', demo: false };
+  function connect() {
+    const chan = running.channel;
+    if (!chan) return;
+    liveState = 'connecting'; updateMode();
+    setStatus(`connecting to #${chan}…`);
+    const sock = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+    ws = sock;
+    sock.onopen = () => {
+      sock.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+      sock.send('PASS SCHMOOPIIE');
+      sock.send('NICK justinfan' + Math.floor(10000 + Math.random() * 80000));
+      sock.send('JOIN #' + chan);
+    };
+    sock.onmessage = e => { if (ws === sock) for (const line of e.data.split('\r\n')) if (line) handle(line); };
+    sock.onclose = () => {
+      if (ws !== sock) return; // replaced by a newer connection
+      liveState = 'retrying'; updateMode();
+      setStatus('disconnected — retrying…');
+      retryTimer = setTimeout(connect, retry);
+      retry = Math.min(retry * 2, 30000);
+    };
+  }
+  function disconnect() {
+    clearTimeout(retryTimer);
+    const sock = ws; ws = null; roomId = null; liveState = 'off';
+    if (sock) try { sock.close(); } catch {}
+  }
+  function handle(line) {
+    if (line.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); return; }
+    let tags = {}, rest = line;
+    if (rest[0] === '@') { const sp = rest.indexOf(' '); tags = parseTags(rest.slice(1, sp)); rest = rest.slice(sp + 1); }
+    const m = /^:(\S+)\s+(\S+)\s+#?(\S+)(?:\s+:(.*))?$/.exec(rest);
+    if (!m) return;
+    const [, prefix, cmd, , trailing = ''] = m;
+
+    if (cmd === 'ROOMSTATE' && tags['room-id'] && !roomId) {
+      roomId = tags['room-id'];
+      retry = 1000;
+      liveState = 'live'; updateMode();
+      setStatus(`connected to #${running.channel} — loading emotes…`);
+      loadExtEmotes().then(() => { setStatus(`connected to #${running.channel} ✓`, 3000); redrawAll(); });
+      return;
+    }
+    if (cmd === 'PRIVMSG') {
+      const login = prefix.split('!')[0];
+      let text = trailing, action = false;
+      const am = /^\u0001ACTION (.*)\u0001$/.exec(text);
+      if (am) { text = am[1]; action = true; }
+      addMessage({ id: tags.id, login, name: tags['display-name'] || login, color: tags.color,
+        badges: tags.badges, emotes: tags.emotes, first: tags['first-msg'] === '1',
+        highlight: tags['msg-id'] === 'highlighted-message', bits: tags.bits, text, action });
+    } else if (cmd === 'USERNOTICE') {
+      const type = tags['msg-id'];
+      if (type === 'subgift' && tags['msg-param-community-gift-id']) return; // part of a mass gift — already announced
+      if (!EV_ICON[type] && !tags['system-msg']) return;
+      addEvent({ type, id: tags.id, login: tags.login, name: tags['display-name'] || tags.login,
+        system: tags['system-msg'], text: trailing, emotes: tags.emotes });
+    } else if (cmd === 'CLEARCHAT') {
+      if (trailing) chatEl.querySelectorAll(`.msg[data-user="${CSS.escape(trailing.toLowerCase())}"]`).forEach(removeEl);
+      else [...chatEl.children].forEach(removeEl);
+    } else if (cmd === 'CLEARMSG') {
+      const id = tags['target-msg-id'];
+      if (id) chatEl.querySelectorAll(`.msg[data-id="${CSS.escape(id)}"]`).forEach(removeEl);
+    } else if (cmd === 'NOTICE' && /does not exist|suspended/i.test(trailing)) {
+      liveState = 'bad'; updateMode();
+      setStatus(`#${running.channel}: ${trailing}`);
+    }
+  }
+
+  // ================= samples (demo + test button) =================
+  const PEOPLE = [
+    ['SparkleGoblin', '#ff4fd8', 'subscriber/12'],
+    ['moddy_mcmodface', '#3dff8a', 'moderator/1,subscriber/24'],
+    ['FrostbiteFred', '#2ff3ff', 'premium/1'],
+    ['xX_Pyro_Xx', '#ff8a3d', 'vip/1'],
+    ['quiet_lurker', '', ''],
+    ['NewbieNell', '#ffe14d', '']
+  ];
+  const LINES = [
+    'that fireball was CRIMINAL 🔥', 'who let the necromancer cook', 'gg everyone', '!join',
+    '@SparkleGoblin you got absolutely zapped', 'first time here, this game is wild',
+    'my wizard has no arms and no fear', 'one more round PLEASE', 'Kappa', 'catJAM catJAM', 'OMEGALUL',
+    '@{me} that was the best round yet'
+  ];
+  const EVENTS = [
+    { type: 'resub', name: 'SparkleGoblin', system: "SparkleGoblin subscribed at Tier 1. They've subscribed for 6 months!", text: 'love this game' },
+    { type: 'raid', name: 'BigWizardEnergy', system: '12 raiders from BigWizardEnergy have joined!' },
+    { type: 'submysterygift', name: 'xX_Pyro_Xx', system: 'xX_Pyro_Xx is gifting 5 Tier 1 Subs to the community!' },
+    { type: 'announcement', name: 'moddy_mcmodface', text: 'Next round starts in 2 minutes — type !join' }
+  ];
+  let sampleN = 0;
+  function sample(forceEvent) {
+    const n = sampleN++;
+    if (forceEvent || (n > 0 && n % 8 === 0)) {
+      const e = EVENTS[Math.floor(n / 8) % EVENTS.length];
+      addEvent({ ...e, login: e.name.toLowerCase() });
+      return;
+    }
+    const [name, color, badges] = PEOPLE[n % PEOPLE.length];
+    const text = LINES[(n * 5) % LINES.length].replace('{me}', S.channel || 'streamer');
+    addMessage({ name, login: name.toLowerCase(), color, badges,
+      emotes: text === 'Kappa' ? '25:0-4' : '', first: name === 'NewbieNell' && n < 7,
+      action: n % 11 === 9, bits: n % 13 === 5 ? '100' : '', text });
+  }
+  let demoTimer = null;
+  function startDemo() {
+    const tick = () => { sample(); demoTimer = setTimeout(tick, 1400 + Math.random() * 1800); };
+    tick();
+  }
+  function stopDemo() { clearTimeout(demoTimer); demoTimer = null; }
+
+  // Live chat runs when a channel is set; fake chatters only run when Demo mode is switched on
+  function applyMode() {
+    const chanChanged = running.channel !== S.channel;
+    stopDemo();
+    if (chanChanged || !S.channel) disconnect();
+    running.channel = S.channel;
+    running.demo = S.demo;
+    if (chanChanged) {
+      badgesLoading = null;
+      if (S.badges === 'real') loadBadges().then(redrawAll);
+      if (!S.channel) loadExtEmotes(); // global emotes only
+    }
+    if (S.channel && !ws) connect();
+    if (S.demo) startDemo();
+    if (!S.channel && !S.demo) setStatus('no channel set — hover over the overlay and click ⚙', 10000);
+    else if (!S.channel) setStatus('demo mode (fake chatters)', 4000);
+    updateMode();
+  }
+  function updateMode() {
+    const el = $('modeNote');
+    if (!el) return;
+    const live = running.channel
+      ? ({ connecting: `Connecting to #${running.channel}…`, live: `Reading #${running.channel} ✓`,
+           retrying: `Reconnecting to #${running.channel}…`, bad: `#${running.channel} not found — check the spelling` }[liveState] || `#${running.channel}`)
+      : 'No channel set';
+    el.textContent = live + (running.demo ? ' · demo chatters ON' : '');
+    el.dataset.state = running.channel ? liveState : 'none';
+  }
+
+  // ================= settings panel =================
+  const FIELDS = Object.keys(DEFAULTS);
+  const SWATCHES = ['', '#2ff3ff', '#b14dff', '#ff4fd8', '#3dff8a', '#ffe14d', '#ff8a3d', '#ff4d5e', '#8b7bff', '#ffffff'];
+  const swBox = $('swatches');
+  for (const c of SWATCHES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sw' + (c ? '' : ' def'); b.dataset.c = c;
+    b.title = c || 'Theme default';
+    if (c) b.style.background = c;
+    b.onclick = () => { $('s_accent').value = c; $('s_accent').dispatchEvent(new Event('input', { bubbles: true })); };
+    swBox.appendChild(b);
+  }
+  function updateExtras() {
+    for (const b of swBox.children) b.classList.toggle('sel', (b.dataset.c || '') === (S.accent || ''));
+    $('v_bga').textContent = S.bga + '%';
+    $('v_scale').textContent = S.scale + '%';
+    $('v_volume').textContent = S.volume + '%';
+    $('v_emotesize').textContent = S.emotesize + '%';
+    const q = new URLSearchParams();
+    for (const f of FIELDS) if (S[f] !== DEFAULTS[f]) q.set(f, typeof S[f] === 'boolean' ? (S[f] ? '1' : '0') : S[f]);
+    $('linkbox').value = location.href.split(/[?#]/)[0] + (q.toString() ? '?' + q : '');
+  }
+  function fillPanel() {
+    for (const f of FIELDS) {
+      const el = $('s_' + f); if (!el) continue;
+      if (el.type === 'checkbox') el.checked = !!S[f]; else el.value = S[f];
+    }
+    const keys = Object.keys(urlOverrides);
+    $('urlNote').textContent = keys.length
+      ? `Heads up: this source's URL has settings in it (${keys.join(', ')}). Those win after a reload — remove them from the URL to use this menu.`
+      : '';
+    updateExtras();
+    updateMode();
+  }
+  function readPanel() {
+    const v = {};
+    for (const f of FIELDS) {
+      const el = $('s_' + f);
+      if (!el) { v[f] = S[f]; continue; }
+      v[f] = el.type === 'checkbox' ? el.checked :
+             (el.type === 'number' || el.type === 'range') ? Number(el.value) : el.value.trim();
+    }
+    v.channel = norm(v.channel);
+    const hex = v.accent.replace(/^#/, '');
+    v.accent = /^[0-9a-f]{6}$/i.test(hex) ? '#' + hex.toLowerCase() : '';
+    const rhex = v.regcolor.replace(/^#/, '');
+    v.regcolor = /^[0-9a-f]{6}$/i.test(rhex) ? '#' + rhex.toLowerCase() : DEFAULTS.regcolor;
+    return v;
+  }
+
+  // the panel sits in the corner away from the chat; it can be dragged or cycled round the corners
+  let manualDock = false;
+  const CORNERS = ['tr', 'br', 'bl', 'tl'];
+  const dockFor = () => (S.valign === 'top' ? 'b' : 't') + (S.align === 'right' ? 'l' : 'r');
+  function setDock(c) {
+    panel.style.left = panel.style.top = '';
+    panel.classList.remove('c-t', 'c-b', 'c-l', 'c-r');
+    panel.classList.add('c-' + c[0], 'c-' + c[1]);
+    panel.dataset.corner = c;
+  }
+  panel.querySelector('.phead').addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    const r = panel.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+    panel.classList.remove('c-t', 'c-b', 'c-l', 'c-r');
+    const move = ev => {
+      const x = Math.min(Math.max(0, ev.clientX - dx), innerWidth - panel.offsetWidth);
+      const y = Math.min(Math.max(0, ev.clientY - dy), innerHeight - 40);
+      panel.style.left = x + 'px'; panel.style.top = y + 'px';
+    };
+    move(e);
+    manualDock = true;
+    const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+    addEventListener('pointermove', move); addEventListener('pointerup', up);
+  });
+
+  panel.addEventListener('input', e => {
+    if (e.target.id === 's_theme') {
+      const p = THEMES[e.target.value];
+      if (p) { $('s_bga').value = p.bga; $('s_tilt').checked = p.tilt; }
+    }
+    const prev = S;
+    S = { ...S, ...readPanel() };
+    applyLook();
+    updateExtras();
+    redrawAll();
+    if (S.badges === 'real') loadBadges().then(redrawAll);
+    if (['7tv', 'bttv', 'ffz'].some(k => prev[k] !== S[k])) loadExtEmotes().then(redrawAll);
+    if (!manualDock && (prev.valign !== S.valign || prev.align !== S.align)) setDock(dockFor());
+    if (S.demo !== running.demo) applyMode();
+    const id = e.target.id;
+    if (id === 's_sound' || id === 's_soundurl') playSound(false, true);
+    if (id === 's_alertsound' || id === 's_alertsoundurl') playSound(true, true);
+    if (id === 's_volume') playSound(S.sound === 'off', true);
+  });
+  $('testCombo').onclick = () => {
+    PEOPLE.slice(0, Math.max(2, Number(S.combomin) || 3) + 1).forEach(([name, color, badges], i) =>
+      setTimeout(() => addMessage({ name, login: name.toLowerCase(), color, badges, emotes: '25:0-4', text: 'Kappa' }), i * 350));
+  };
+  // the channel switches over when you press Enter or click away from the box
+  $('s_channel').addEventListener('change', () => { if (S.channel !== running.channel) applyMode(); });
+  $('s_channel').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
+  // clicking a setting's name also flips its switch
+  panel.addEventListener('click', e => {
+    const lab = e.target.closest('.row > label:not(.switch)');
+    if (!lab || e.target.closest('input,select,button,textarea')) return;
+    const cb = lab.parentElement.querySelector('.switch input');
+    if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('input', { bubbles: true })); }
+  });
+
+  function openPanel() {
+    fillPanel();
+    if (!manualDock) setDock(dockFor());
+    panel.classList.remove('mini');
+    panel.classList.add('open');
+  }
+  function cancelPanel() {
+    const prev = S;
+    S = computeS();
+    applyLook();
+    redrawAll();
+    if (['7tv', 'bttv', 'ffz'].some(k => prev[k] !== S[k])) loadExtEmotes().then(redrawAll);
+    if (S.channel !== running.channel || S.demo !== running.demo) applyMode();
+    panel.classList.remove('open');
+  }
+  $('gear').onclick = openPanel;
+  $('x').onclick = cancelPanel;
+  $('cancel').onclick = cancelPanel;
+  $('swap').onclick = () => { manualDock = true; setDock(CORNERS[(CORNERS.indexOf(panel.dataset.corner) + 1) % 4]); };
+  $('mini').onclick = () => panel.classList.toggle('mini');
+  $('test').onclick = () => sample(false);
+  $('copyLink').onclick = async () => {
+    const box = $('linkbox'), btn = $('copyLink');
+    let ok = false;
+    try { await navigator.clipboard.writeText(box.value); ok = true; } catch {}
+    if (!ok) { box.focus(); box.select(); try { ok = document.execCommand('copy'); } catch {} }
+    btn.textContent = ok ? 'Copied!' : 'Ctrl+C';
+    if (!ok) { box.focus(); box.select(); } // selected so Ctrl+C works
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  };
+  $('save').onclick = () => {
+    const v = readPanel();
+    if (!store.set(v)) { $('urlNote').textContent = "Couldn't save here — paste the link above into the source's URL box instead."; return; }
+    saved = { ...DEFAULTS, ...v };
+    S = { ...S, ...v };
+    if (S.channel !== running.channel || S.demo !== running.demo) applyMode();
+    panel.classList.remove('open');
+    setStatus('settings saved ✓', 2000);
+  };
+  let resetArmed = false;
+  $('reset').onclick = () => {
+    if (!resetArmed) {
+      resetArmed = true; $('reset').textContent = 'Sure? Click again';
+      setTimeout(() => { resetArmed = false; $('reset').textContent = 'Reset'; }, 3000);
+      return;
+    }
+    store.clear(); location.reload();
+  };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('open')) cancelPanel(); });
+
+  // ================= start =================
+  applyLook();
+  const badgeWait = S.badges === 'real'
+    ? Promise.race([loadBadges(), new Promise(r => setTimeout(r, 3000))])
+    : Promise.resolve();
+  badgeWait.then(applyMode);
+})();
+</script>
+</body>
+</html>
