@@ -33,7 +33,7 @@
     store.set("tab", name);
   }
   tabBtns.forEach(b => b.onclick = () => showTab(b.dataset.tab));
-  showTab(["conn", "pads", "shout", "overlay", "cam", "trig", "keys", "voice", "live"].includes(store.get("tab", "")) ? store.get("tab", "") : (localStorage.getItem("padbridge.conn") ? "pads" : "conn"));
+  showTab(["conn", "pads", "shout", "overlay", "cam", "trig", "keys", "voice", "live", "pcs"].includes(store.get("tab", "")) ? store.get("tab", "") : (localStorage.getItem("padbridge.conn") ? "pads" : "conn"));
 
   // ---------- state ----------
   const DEFAULT_TEMPLATE = "Go show some love to {name}! Find them at {link} – last seen playing {game}.";

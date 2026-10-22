@@ -42,6 +42,9 @@
   "file": "tabs/webcam/webcam.html"
  },
  {
+  "file": "tabs/two-pcs/two-pcs.html"
+ },
+ {
   "file": "shared/page-footer.html"
  },
  {
@@ -193,6 +196,15 @@
  },
  {
   "file": "tabs/triggers/triggers.js"
+ },
+ {
+  "text": "</script>"
+ },
+ {
+  "text": "<script>"
+ },
+ {
+  "file": "tabs/two-pcs/two-pcs.js"
  },
  {
   "text": "</script>"

@@ -14,5 +14,7 @@ contextBridge.exposeInMainWorld("tosHub", {
   pressKeys: (acc, hold) => ipcRenderer.invoke("press-keys", { acc, hold }),
   saveVoiceProfile: xml => ipcRenderer.invoke("save-voice-profile", xml),
   onVoice: cb => { ipcRenderer.removeAllListeners("voice-cmd"); ipcRenderer.on("voice-cmd", (e, c) => cb(c)); },
+  twoPc: (cmd, a) => ipcRenderer.invoke("two-pc", cmd, a),
+  onTwoPc: cb => { ipcRenderer.removeAllListeners("two-pc-state"); ipcRenderer.on("two-pc-state", (e, s) => cb(s)); },
   onGoproStatus: cb => { ipcRenderer.removeAllListeners("gopro-status"); ipcRenderer.on("gopro-status", (e, s) => cb(s)); }
 });
