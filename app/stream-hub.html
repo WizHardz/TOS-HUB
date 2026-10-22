@@ -722,6 +722,7 @@
       <button data-tab="keys">Keybinds</button>
       <button data-tab="voice">Voice</button>
       <button data-tab="live">Stream view</button>
+      <button data-tab="pcs">Two PCs</button>
     </nav>
     <div class="pills">
       <span class="pill"><span class="dot" id="obsDot"></span><span id="obsStatus">OBS: not connected</span></span>
@@ -1539,6 +1540,38 @@
       </section>
       </div>
     </div>
+  </div>
+  <div class="tab hide" id="tab-pcs">
+    <section id="pcsSec">
+      <h2>🖥️ Two PCs</h2>
+      <p class="note" style="margin:0 0 10px">Stream from one PC and play on another. Install TOS HUB on both: the <b>streaming PC</b> runs everything here (OBS, Twitch, chat, webcam, pads); the <b>gaming PC</b> presses keys in your game, listens for your keybinds while you play, and can show the stream's effects over your game so you see what chat sees.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="pcsRoles">
+        <button type="button" class="ghost" data-role="single">💻 Just this PC</button>
+        <button type="button" class="ghost" data-role="streaming">🎥 This is my streaming PC</button>
+        <button type="button" class="ghost" data-role="gaming">🎮 This is my gaming PC</button>
+      </div>
+      <p class="note" id="pcsRoleMsg" style="margin:8px 0 0"></p>
+    </section>
+    <section id="pcsLinkSec" class="hide">
+      <h2>🎮 Gaming PC</h2>
+      <p style="margin:0;font-weight:600"><span class="dot" id="pcsDot" style="display:inline-block;vertical-align:middle;margin-right:8px"></span><span id="pcsState">Waiting for your gaming PC…</span></p>
+      <div id="pcsPair">
+        <p class="note">On the gaming PC: open TOS HUB → <b>Stream</b> → <b>Two PCs</b> → <b>This is my gaming PC</b>. It finds this PC by itself; type this code there:</p>
+        <p id="pcsCode" style="font:34px var(--display);letter-spacing:.25em;color:var(--accent);margin:6px 0"></p>
+        <button type="button" class="ghost" id="pcsNewCode">New code</button>
+        <p class="note" id="pcsAddr"></p>
+      </div>
+      <div id="pcsLinked" class="hide">
+        <p class="note">While linked, <b>⌨️ Press keys</b> actions press keys on the gaming PC, and your <b>⌨️ Keyboard</b> triggers listen to the gaming PC's keyboard. If the link drops, both go back to this PC until it's back.</p>
+        <button type="button" class="ghost" id="pcsForget">Unpair</button>
+      </div>
+      <p class="note err" id="pcsErr"></p>
+      <ul class="note" id="pcsLog" style="margin:10px 0 0;padding-left:18px"></ul>
+      <details style="margin-top:10px">
+        <summary>Can't link? (Windows Firewall)</summary>
+        <p class="note">The first time, Windows asks whether TOS HUB may use the network: tick <b>Private networks</b> and allow it. For the effects over your game, the gaming PC also talks straight to OBS on this PC, so OBS needs the same OK (OBS → Tools → WebSocket Server Settings must be on). Both PCs need to be on the same home network.</p>
+      </details>
+    </section>
   </div>
 
   <footer class="hubfoot">
@@ -2703,7 +2736,7 @@ window.tosFxOptions = (sel, list, val) => tosFxGroups(list).forEach(([name, item
     store.set("tab", name);
   }
   tabBtns.forEach(b => b.onclick = () => showTab(b.dataset.tab));
-  showTab(["conn", "pads", "shout", "overlay", "cam", "trig", "keys", "voice", "live"].includes(store.get("tab", "")) ? store.get("tab", "") : (localStorage.getItem("padbridge.conn") ? "pads" : "conn"));
+  showTab(["conn", "pads", "shout", "overlay", "cam", "trig", "keys", "voice", "live", "pcs"].includes(store.get("tab", "")) ? store.get("tab", "") : (localStorage.getItem("padbridge.conn") ? "pads" : "conn"));
 
   // ---------- state ----------
   const DEFAULT_TEMPLATE = "Go show some love to {name}! Find them at {link} – last seen playing {game}.";
@@ -8929,6 +8962,59 @@ bottle3d: {"label": "\ud83e\uddf4 Bottle (3D)", "spot": [0.5, 0.45, 0.36], "cat"
 })();
 </script>
 <script>
+  // ================= TWO PCs: this PC is the streaming PC, the gaming PC, or just one PC =================
+  (() => {
+    "use strict";
+    const $ = q => document.querySelector(q), H = window.tosHub;
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    if (!$("#pcsSec")) return;
+    if (!(H && H.twoPc)) { $("#pcsRoleMsg").textContent = "Two PCs needs the TOS HUB desktop app (this is the browser preview)."; $("#pcsRoleMsg").className = "note warn"; return; }
+    // a pill next to OBS / MIDI / Twitch at the top, only while this is the streaming PC
+    const pill = document.createElement("span"); pill.className = "pill hide"; pill.innerHTML = '<span class="dot" id="gpDot"></span><span id="gpStatus">Gaming PC</span>';
+    pill.style.cursor = "pointer"; pill.onclick = () => { const b = document.querySelector('header .tabs button[data-tab="pcs"]'); if (b) b.click(); };
+    { const p = $("header .pills"); if (p) p.append(pill); }
+    function render(s) {
+      document.querySelectorAll("#pcsRoles button").forEach(b => { const on = b.dataset.role === s.role; b.classList.toggle("primary", on); b.classList.toggle("ghost", !on); });
+      const streaming = s.role === "streaming";
+      $("#pcsLinkSec").classList.toggle("hide", !streaming);
+      pill.classList.toggle("hide", !streaming);
+      if (!streaming) return;
+      const dot = s.up ? "good" : s.paired ? "warn" : "";
+      $("#pcsDot").className = "dot " + dot; $("#gpDot").className = "dot " + dot;
+      $("#gpStatus").textContent = "Gaming PC: " + (s.up ? "linked" : s.paired ? "not here" : "not paired");
+      $("#pcsState").textContent = s.up ? `Linked to ${s.peer} (${s.peerHost}) ✓` : s.paired ? `Paired with ${s.peer || "your gaming PC"}. Waiting for it to come online…` : "Waiting for your gaming PC…";
+      $("#pcsPair").classList.toggle("hide", s.paired);
+      $("#pcsLinked").classList.toggle("hide", !s.paired);
+      $("#pcsCode").textContent = s.code ? s.code.slice(0, 3) + " " + s.code.slice(3) : "";
+      $("#pcsAddr").textContent = s.addresses.length ? `This PC's address (if the gaming PC asks): ${s.addresses.join(" or ")}` : "This PC doesn't seem to be on a network.";
+      $("#pcsErr").textContent = s.err || "";
+      $("#pcsLog").innerHTML = s.log.slice(0, 5).map(l => `<li>${new Date(l.at).toLocaleTimeString()} · ${esc(l.text)}</li>`).join("");
+    }
+    // switching restarts TOS HUB; a second click makes sure you meant it
+    document.querySelectorAll("#pcsRoles button").forEach(b => {
+      const label = b.textContent; let armed = 0;
+      b.onclick = () => {
+        if (b.classList.contains("primary")) return;
+        if (Date.now() - armed < 4000) { H.twoPc("role", { role: b.dataset.role }); return; }
+        armed = Date.now(); b.textContent = "Click again to restart TOS HUB";
+        $("#pcsRoleMsg").textContent = b.dataset.role === "gaming" ? "This PC then shows the small gaming PC window instead of the full hub. Your settings stay here for when you switch back." : "TOS HUB restarts to switch.";
+        setTimeout(() => { b.textContent = label; $("#pcsRoleMsg").textContent = ""; }, 4000);
+      };
+    });
+    $("#pcsNewCode").onclick = () => H.twoPc("code");
+    $("#pcsForget").onclick = () => H.twoPc("forget");
+    // the gaming PC's effects layer connects straight to OBS here, so it needs the same OBS address and password
+    function shareObs() {
+      let c = {}; try { c = JSON.parse(localStorage.getItem("padbridge.conn") || "{}") || {}; } catch (e) {}
+      const box = id => { const e = $(id); return e ? e.value.trim() : ""; };
+      H.twoPc("obs", { host: box("#host") || c.host || "localhost", port: box("#port") || c.port || "4455", pw: box("#password") || c.password || "" });
+    }
+    H.onTwoPc(render);
+    const poll = async () => { try { const s = await H.twoPc("info"); render(s); if (s.role === "streaming") shareObs(); } catch (e) {} };
+    poll(); setInterval(poll, 5000);
+  })();
+</script>
+<script>
 // ---------- main sections (Stream · Webcam · Controls · Chat) with their sub-tabs underneath ----------
 (() => {
   "use strict";
@@ -8936,8 +9022,8 @@ bottle3d: {"label": "\ud83e\uddf4 Bottle (3D)", "spot": [0.5, 0.45, 0.36], "cat"
   const header = $("header"), tabs = $("header .tabs"); if (!header || !tabs) return;
   // VoiceAttack gets its own sub-tab under Controls
   { const home = $("#voiceHome"); ["#voiceSec", "#trigSec"].forEach(q => { const e = $(q); if (home && e) home.append(e); }); }
-  const SECTIONS = [["stream", "🎥 Stream", ["live", "conn"]], ["cam", "📷 Webcam", ["cam"]], ["ctl", "⚡ Controls", ["trig", "keys", "voice", "pads"]], ["chat", "💬 Chat", ["overlay", "shout"]]];
-  const NAMES = { live: "Stream view", conn: "Connections", trig: "Triggers", keys: "Keybinds", voice: "Voice (VoiceAttack)", pads: "Pads", overlay: "Chat overlay", shout: "Shoutouts" };
+  const SECTIONS = [["stream", "🎥 Stream", ["live", "conn", "pcs"]], ["cam", "📷 Webcam", ["cam"]], ["ctl", "⚡ Controls", ["trig", "keys", "voice", "pads"]], ["chat", "💬 Chat", ["overlay", "shout"]]];
+  const NAMES = { live: "Stream view", conn: "Connections", pcs: "Two PCs", trig: "Triggers", keys: "Keybinds", voice: "Voice (VoiceAttack)", pads: "Pads", overlay: "Chat overlay", shout: "Shoutouts" };
   const secOf = t => (SECTIONS.find(x => x[2].includes(t)) || SECTIONS[0])[0];
   const sec = document.createElement("nav"); sec.className = "secnav";
   SECTIONS.forEach(([k, l]) => { const b = document.createElement("button"); b.type = "button"; b.dataset.sec = k; b.textContent = l; sec.append(b); });

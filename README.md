@@ -24,6 +24,7 @@ packaging/          desktop shortcut helpers that ship next to TOS HUB.exe
 | Keybinds | `src/tabs/keybinds` (page) and `src/tabs/triggers/triggers.js` (key pressing) |
 | Voice (VoiceAttack) | `src/tabs/voice` |
 | Stream view | `src/tabs/stream-view` |
+| Two PCs (streaming PC + gaming PC) | `src/tabs/two-pcs` (page), `app/two-pc.js` (the link), `app/gaming-pc.html` (gaming PC window); see `docs/two-pcs.md` |
 
 ## Making a change
 

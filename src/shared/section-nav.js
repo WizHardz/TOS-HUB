@@ -5,8 +5,8 @@
   const header = $("header"), tabs = $("header .tabs"); if (!header || !tabs) return;
   // VoiceAttack gets its own sub-tab under Controls
   { const home = $("#voiceHome"); ["#voiceSec", "#trigSec"].forEach(q => { const e = $(q); if (home && e) home.append(e); }); }
-  const SECTIONS = [["stream", "🎥 Stream", ["live", "conn"]], ["cam", "📷 Webcam", ["cam"]], ["ctl", "⚡ Controls", ["trig", "keys", "voice", "pads"]], ["chat", "💬 Chat", ["overlay", "shout"]]];
-  const NAMES = { live: "Stream view", conn: "Connections", trig: "Triggers", keys: "Keybinds", voice: "Voice (VoiceAttack)", pads: "Pads", overlay: "Chat overlay", shout: "Shoutouts" };
+  const SECTIONS = [["stream", "🎥 Stream", ["live", "conn", "pcs"]], ["cam", "📷 Webcam", ["cam"]], ["ctl", "⚡ Controls", ["trig", "keys", "voice", "pads"]], ["chat", "💬 Chat", ["overlay", "shout"]]];
+  const NAMES = { live: "Stream view", conn: "Connections", pcs: "Two PCs", trig: "Triggers", keys: "Keybinds", voice: "Voice (VoiceAttack)", pads: "Pads", overlay: "Chat overlay", shout: "Shoutouts" };
   const secOf = t => (SECTIONS.find(x => x[2].includes(t)) || SECTIONS[0])[0];
   const sec = document.createElement("nav"); sec.className = "secnav";
   SECTIONS.forEach(([k, l]) => { const b = document.createElement("button"); b.type = "button"; b.dataset.sec = k; b.textContent = l; sec.append(b); });

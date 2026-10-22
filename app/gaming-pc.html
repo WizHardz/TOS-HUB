@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TOS HUB · Gaming PC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* the same WizHardz Neon look as the main TOS HUB window */
+  :root{
+    --bg:#0c0418; --panel:#140826; --line:#3a2361; --line2:#4b2d7d;
+    --text:#f4ecff; --muted:#a993cf; --soft:#c9b6ea;
+    --accent:#2ff3ff; --accent2:#b14dff; --pink:#ff4fd8;
+    --good:#3dff8a; --warn:#ffe14d; --bad:#ff8a8a;
+    --display:Bungee, Impact, "Arial Black", sans-serif;
+    --body:Rubik, "Segoe UI", system-ui, sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font:15px/1.45 var(--body);
+    background:radial-gradient(900px 420px at 50% -12%, #2a1258 0%, transparent 62%), var(--bg);min-height:100vh}
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+  h1{font:26px/1 var(--display);margin:0 0 4px;color:var(--accent);text-shadow:3px 3px 0 var(--accent2)}
+  h1 span{color:var(--pink);text-shadow:3px 3px 0 #5a1250}
+  .sub{color:var(--muted);margin:0 0 16px}
+  h2{font:14px var(--display);letter-spacing:.5px;color:var(--pink);margin:0 0 10px;font-weight:400}
+  section{background:rgba(20,8,38,.97);border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .status{display:flex;align-items:center;gap:10px;font-weight:600}
+  .dot{width:12px;height:12px;border-radius:50%;background:#5b4a7a;border:1px solid #000;flex:none}
+  .dot.good{background:var(--good);box-shadow:0 0 8px var(--good)}
+  .dot.warn{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+  .note{color:var(--muted);font-size:13px;margin:8px 0 0}
+  .note.err{color:var(--bad)} .note.ok{color:var(--good)}
+  button{font:600 14px var(--body);color:var(--text);background:#1a0b30;border:2px solid var(--line2);border-radius:10px;padding:8px 14px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#120822;border-color:#000;box-shadow:3px 3px 0 var(--accent2)}
+  input,select{font:15px var(--body);color:var(--text);background:#0c0418;border:2px solid var(--line2);border-radius:10px;padding:8px 10px}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .found{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:2px solid var(--line);border-radius:10px;margin-top:8px}
+  .code{width:9em;letter-spacing:.3em;font:20px var(--display);text-align:center}
+  label.sw{display:flex;gap:8px;align-items:center;margin-top:8px;cursor:pointer}
+  ul.log{list-style:none;margin:0;padding:0;font-size:13px;color:var(--soft)}
+  ul.log li{padding:3px 0;border-bottom:1px solid var(--line)}
+  ul.log time{color:var(--muted);margin-right:8px}
+  .hide{display:none!important}
+  details summary{cursor:pointer;color:var(--soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TOS <span>HUB</span></h1>
+  <p class="sub">Gaming PC · this PC presses keys in your game and shows the stream's effects over it. Everything else runs on your streaming PC.</p>
+
+  <section>
+    <h2>Streaming PC</h2>
+    <div class="status"><span class="dot" id="dot"></span><span id="state">Starting…</span></div>
+    <p class="note" id="err"></p>
+
+    <div id="pairBox">
+      <p class="note">On the streaming PC, open TOS HUB → <b>Stream</b> → <b>Two PCs</b>, choose <b>Streaming PC</b>, and type the 6-digit code it shows.</p>
+      <div id="found"></div>
+      <details id="manual" style="margin-top:10px">
+        <summary>Not showing up? Type its address</summary>
+        <div class="row">
+          <input id="mHost" placeholder="e.g. 192.168.1.20" spellcheck="false" style="flex:1">
+          <input id="mCode" class="code" placeholder="code" inputmode="numeric" maxlength="7">
+          <button class="primary" id="mGo">Pair</button>
+        </div>
+        <p class="note">The Two PCs tab on the streaming PC lists its address.</p>
+      </details>
+    </div>
+    <div class="row hide" id="linkedBox"><button id="forget">Unpair</button></div>
+  </section>
+
+  <section>
+    <h2>Effects over my game</h2>
+    <label class="sw"><input type="checkbox" id="hudOn"> Show the stream's whole-screen effects on this screen too, so you see what chat sees</label>
+    <label class="sw"><input type="checkbox" id="hudSound"> Play their sounds here as well</label>
+    <div class="row"><select id="hudDisplay"></select><button id="hudTest">Test</button></div>
+    <p class="note" id="hudMsg">Works with games in <b>borderless</b> or <b>windowed</b> mode (true fullscreen hides anything on top). Clicks go straight through to your game.</p>
+  </section>
+
+  <section>
+    <h2>What happened</h2>
+    <ul class="log" id="log"><li>Nothing yet.</li></ul>
+  </section>
+
+  <section>
+    <h2>This PC</h2>
+    <p class="note" style="margin-top:0" id="me"></p>
+    <div class="row">
+      <button id="toSingle">Use TOS HUB on just this PC</button>
+      <button id="toStreaming">Make this the streaming PC</button>
+    </div>
+    <p class="note" id="roleMsg"></p>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id), H = window.tosHub;
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  if (!H || !H.twoPc) { $("state").textContent = "This page only works inside the TOS HUB desktop app."; return; }
+  let S = null, codes = {};
+  function render(s) {
+    S = s;
+    $("dot").className = "dot " + (s.up ? "good" : s.paired ? "warn" : "");
+    $("state").textContent = s.up ? `Linked to ${s.peer} (${s.peerHost}) ✓` : s.paired ? `Looking for ${s.peer || "your streaming PC"}…` : "Not paired yet";
+    $("err").textContent = s.err || ""; $("err").className = "note err";
+    $("pairBox").classList.toggle("hide", s.up);
+    $("linkedBox").classList.toggle("hide", !s.paired);
+    // streaming PCs found on the network
+    const box = $("found");
+    const list = s.found.filter(f => Date.now() - f.seen < 15000), key = list.map(f => f.host + f.name).join("|");
+    if (key === box.dataset.key) {}   // same PCs as before: leave the code boxes alone while you type
+    else if ((box.dataset.key = key, !list.length)) box.innerHTML = '<p class="note">Looking for a streaming PC on your network…</p>';
+    else {
+      box.innerHTML = "";
+      list.forEach(f => {
+        const d = document.createElement("div"); d.className = "found";
+        d.innerHTML = `<span><b>${esc(f.name)}</b> <span class="note">${esc(f.host)}</span></span>`;
+        const inp = document.createElement("input"); inp.className = "code"; inp.placeholder = "code"; inp.inputMode = "numeric"; inp.maxLength = 7; inp.value = codes[f.host] || "";
+        inp.oninput = () => { codes[f.host] = inp.value; };
+        const b = document.createElement("button"); b.className = "primary"; b.textContent = "Pair";
+        b.onclick = () => pair(f.host, f.port, inp.value);
+        inp.onkeydown = e => { if (e.key === "Enter") b.click(); };
+        const r = document.createElement("span"); r.className = "row"; r.style.marginTop = "0"; r.append(inp, b); d.append(r); box.append(d);
+      });
+    }
+    // effects layer
+    $("hudOn").checked = !!s.hud.on; $("hudSound").checked = !!s.hud.sound;
+    const sel = $("hudDisplay"), want = String(s.hud.display || 0);
+    if (sel.options.length !== s.displays.length) { sel.innerHTML = ""; s.displays.forEach(d => sel.append(new Option(d.label, String(d.i)))); }
+    sel.value = want;
+    $("log").innerHTML = s.log.length ? s.log.map(l => `<li><time>${new Date(l.at).toLocaleTimeString()}</time>${esc(l.text)}</li>`).join("") : "<li>Nothing yet.</li>";
+    $("me").textContent = `This PC is ${s.name} (${s.addresses.join(", ") || "no network"}), set up as the gaming PC.`;
+  }
+  async function pair(host, port, code) {
+    code = String(code || "").replace(/\D/g, "");
+    if (code.length !== 6) { $("err").textContent = "The code is 6 digits."; return; }
+    await H.twoPc("pair", { host, port, code });
+  }
+  $("mGo").onclick = () => pair($("mHost").value.trim(), 0, $("mCode").value);
+  $("forget").onclick = () => H.twoPc("forget");
+  $("hudOn").onchange = () => H.twoPc("hud", { on: $("hudOn").checked });
+  $("hudSound").onchange = () => H.twoPc("hud", { sound: $("hudSound").checked });
+  $("hudDisplay").onchange = () => H.twoPc("hud", { display: +$("hudDisplay").value });
+  $("hudTest").onclick = async () => {
+    const ok = await H.twoPc("hud-test");
+    $("hudMsg").textContent = ok ? "Sent a test confetti ✓ You should see it over your screen." : !$("hudOn").checked ? "Tick “Show the stream's whole-screen effects” first." : "The effects layer starts once this PC is linked to the streaming PC (and OBS is connected there).";
+  };
+  // switching what this PC is restarts TOS HUB; ask for a second click so it can't happen by accident
+  [["toSingle", "single"], ["toStreaming", "streaming"]].forEach(([id, role]) => {
+    const b = $(id), label = b.textContent; let armed = 0;
+    b.onclick = () => {
+      if (Date.now() - armed < 4000) { H.twoPc("role", { role }); return; }
+      armed = Date.now(); b.textContent = "Click again to restart TOS HUB"; $("roleMsg").textContent = "This unpairs the PCs.";
+      setTimeout(() => { b.textContent = label; $("roleMsg").textContent = ""; }, 4000);
+    };
+  });
+  H.onTwoPc(render);
+  const poll = async () => { try { render(await H.twoPc("info")); } catch (e) {} };
+  poll(); setInterval(poll, 3000);
+})();
+</script>
+</body>
+</html>

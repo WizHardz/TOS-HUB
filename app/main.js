@@ -54,9 +54,10 @@ function openTwitchLogin(url) {
 }
 
 function createWindow() {
+  const gaming = twoPc.role() === "gaming";
   win = new BrowserWindow({
-    width: 1280, height: 720, useContentSize: true, minWidth: 640, minHeight: 480,
-    title: "TOS HUB", backgroundColor: "#0c0418",
+    width: gaming ? 560 : 1280, height: gaming ? 760 : 720, useContentSize: true, minWidth: gaming ? 420 : 640, minHeight: 480,
+    title: gaming ? "TOS HUB · Gaming PC" : "TOS HUB", backgroundColor: "#0c0418",
     icon: path.join(__dirname, "tos-hub.ico"),
     autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, sandbox: true, backgroundThrottling: false, preload: path.join(__dirname, "preload.js") }
@@ -72,9 +73,9 @@ function createWindow() {
     if (!url.startsWith("file:")) { e.preventDefault(); if (/^https?:/i.test(url)) shell.openExternal(url); }
   });
 
-  win.loadFile(path.join(__dirname, "stream-hub.html"));
+  win.loadFile(path.join(__dirname, twoPc.role() === "gaming" ? "gaming-pc.html" : "stream-hub.html"));
   win.on("page-title-updated", e => e.preventDefault()); // keep the title "TOS HUB"
-  win.on("closed", () => { if (chatWin && !chatWin.isDestroyed()) chatWin.close(); });
+  win.on("closed", () => { if (chatWin && !chatWin.isDestroyed()) chatWin.close(); twoPc.stop(); });
 }
 
 // Saves the webcam shape picture (a PNG) where OBS can read it. Only the main window may ask,
@@ -240,7 +241,7 @@ function startVoiceServer() {
     if (parts[0] !== voiceState.key) { res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("wrong key\n"); }
     const cmd = parts.slice(1).join("/");
     if (!cmd) { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end("TOS HUB is listening\n"); }
-    if (win && !win.isDestroyed()) win.webContents.send("voice-cmd", cmd);
+    if (!twoPc.toHub(cmd) && win && !win.isDestroyed()) win.webContents.send("voice-cmd", cmd);
     res.writeHead(200, { "Content-Type": "text/plain" }); res.end("ok\n");
   });
   srv.on("error", e => { voiceState.ok = false; voiceState.err = e.code === "EADDRINUSE" ? "in use" : String(e.message || e); });
@@ -251,7 +252,7 @@ ipcMain.handle("voice-info", () => voiceState);
 // ---- keybinds: keys that work anywhere (even while your game is in front) ----
 const RESERVED = new Set(["CommandOrControl+Shift+C", "CommandOrControl+Shift+L", "Ctrl+Shift+C", "Ctrl+Shift+L"]);   // the on-screen chat's own keys
 let boundKeys = [];
-ipcMain.handle("set-keybinds", (e, list) => {
+function setKeybindsHere(list, onHit) {   // onHit(cmd): what to do when one is pressed
   boundKeys.forEach(k => { try { globalShortcut.unregister(k); } catch (x) {} });
   boundKeys = [];
   return (Array.isArray(list) ? list : []).map(({ acc, cmd }) => {
@@ -259,11 +260,23 @@ ipcMain.handle("set-keybinds", (e, list) => {
     if (RESERVED.has(acc)) return { acc, ok: false, why: "chat" };
     if (boundKeys.includes(acc)) return { acc, ok: false, why: "twice" };
     let ok = false;
-    try { ok = globalShortcut.register(acc, () => { if (Date.now() < selfPressUntil) return; if (win && !win.isDestroyed()) win.webContents.send("voice-cmd", cmd); }); } catch (x) { return { acc, ok: false, why: "bad" }; }
+    try { ok = globalShortcut.register(acc, () => { if (Date.now() < selfPressUntil) return; onHit(cmd); }); } catch (x) { return { acc, ok: false, why: "bad" }; }
     if (ok) boundKeys.push(acc);
     return { acc, ok, why: ok ? "" : "taken" };
   });
-});
+}
+// with two PCs linked, keybinds listen on the gaming PC's keyboard instead of this one
+let keybindList = [];
+const toPage = cmd => { if (win && !win.isDestroyed()) win.webContents.send("voice-cmd", cmd); };
+async function applyKeybinds() {
+  if (twoPc.role() === "streaming" && twoPc.up()) {
+    setKeybindsHere([], toPage);
+    const res = await twoPc.request("keys", { list: keybindList });
+    if (res) return res;
+  }
+  return setKeybindsHere(keybindList, toPage);
+}
+ipcMain.handle("set-keybinds", (e, list) => { keybindList = Array.isArray(list) ? list : []; return applyKeybinds(); });
 
 // ---- pressing keys for you (the "⌨️ Press keys" action): a small helper that types into whatever window is in front ----
 // Windows only. It sends real scan codes (like a keyboard does), so most games see them too.
@@ -330,7 +343,7 @@ function keyHelper() {
   return keyReady;
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
-ipcMain.handle("press-keys", async (e, { acc, hold } = {}) => {
+async function pressKeysHere({ acc, hold } = {}) {
   if (process.platform !== "win32") return { ok: false, why: "Pressing keys only works on Windows." };
   const parts = String(acc || "").split("+").filter(Boolean), vks = parts.map(vkOf);
   if (!parts.length || vks.some(v => !v)) return { ok: false, why: "TOS HUB can't press “" + acc + "”." };
@@ -343,8 +356,34 @@ ipcMain.handle("press-keys", async (e, { acc, hold } = {}) => {
   for (const v of vks.slice().reverse()) { send("u", v); await wait(12); }
   selfPressUntil = Date.now() + 300;
   return { ok: true };
+}
+// with two PCs linked, keys are pressed on the gaming PC (where the game is in front)
+ipcMain.handle("press-keys", async (e, { acc, hold } = {}) => {
+  if (twoPc.role() === "streaming" && twoPc.up()) {
+    const res = await twoPc.request("press", { acc, hold }, Math.max(40, Math.min(30000, +hold || 0)) + 8000);
+    return res || { ok: false, why: "The gaming PC didn't answer." };
+  }
+  return pressKeysHere({ acc, hold });
 });
 app.on("will-quit", () => { try { if (keyProc) keyProc.kill(); } catch (e) {} });
+
+// ---- two PCs: streaming PC + gaming PC (see two-pc.js) ----
+const twoPc = require("./two-pc")({ app, BrowserWindow, screen, getWin: () => win, local: { pressKeys: pressKeysHere, setKeybinds: setKeybindsHere } });
+twoPc.onLink(() => { if (twoPc.role() === "streaming") applyKeybinds(); });
+const fromMain = e => !!(win && e.sender === win.webContents);
+ipcMain.handle("two-pc", (e, cmd, a = {}) => {
+  if (!fromMain(e)) return null;
+  if (cmd === "info") return twoPc.info();
+  if (cmd === "role") { if (twoPc.setRole(a.role)) { app.relaunch(); app.quit(); } return true; }
+  if (cmd === "pair") return twoPc.pair(a.host, a.port, a.code);
+  if (cmd === "forget") return twoPc.forget();
+  if (cmd === "code") return twoPc.newCode();
+  if (cmd === "obs") return twoPc.setObs(a);
+  if (cmd === "hud") return twoPc.setHud(a);
+  if (cmd === "hud-test") return twoPc.testHud();
+  return null;
+});
+app.on("will-quit", () => twoPc.stop());
 
 // GoPro webcam over USB (see gopro.js)
 const gopro = require("./gopro")(ipcMain, () => win);
@@ -374,6 +413,7 @@ app.whenReady().then(() => {
   });
   createWindow();
   startVoiceServer();
+  twoPc.start();
 });
 
 app.on("window-all-closed", () => app.quit());
